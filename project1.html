@@ -1,0 +1,145 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Tables With Troy</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+							<li><a href="index.html">Let's Go Home</a></li>
+							<li class="active"><a href="generic.html">All Projects</a></li>
+							<li><a href="elements.html">Additional Resourcess</a></li>
+						</ul>
+						<ul class="icons">
+							
+							<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+						</ul>
+					</nav>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Post -->
+							<section class="post">
+								<header class="major">
+									
+									<h1>Milwaukee Crime Statistics Project</h1>
+									<p>A few weeks ago I was having a discussion with some friends about how it feels like Milwaukee is becoming more unsafe compared to when we used to live in the city back in 2013. Being the curious person that I am, I wanted to find 
+										if this statement is true or false using a combination of SQL, Python, Excel, and Tableau.
+									</p>
+								</header>
+								<div class="image main"><img src="images/pic01.jpg" alt="" /></div>
+								<p>The first step in this journey is to find our datasets. Lucky for me, Milwaukee has some amazing datasets for public use. Much of the data does have an API that could have been utilized, however at the time when this project was done, I did not have the skillset
+									to use that API natively within Jupyter. </p>
+								
+								<p><a href="https://data.milwaukee.gov/dataset/wibrarchive/resource/395db729-a30a-4e53-ab66-faeb5e1899c8">Historical dataset(2005-2022)</a></p>
+								<p><a href="https://data.milwaukee.gov/dataset/wibr/resource/87843297-a6fa-46d4-ba5d-cb342fb2d3bb">Current dataset(2023~)</a></p>
+								
+
+								<p> 
+									Now that we have our data, it's time to explore and clean! Opening both datasets within Excel first since they would both need to be converted to Excel format for better integration with SQL Server anyways. I reviewed and found that IncidentNum does vary
+									between INT and String. This is due to the way in which the Milwaukee Police Department started the "P2C" program in October 2022, which allows for citizens to self report crimes without police taking the formal incident. Those incidents that were reported
+									by the citizens begins with P2C.
+								</p>
+								<p>
+									Since the "incidentnum" is the column that will be used to tie together all of the data later on, I made sure that we were void of nulls and blanks.</p>
+								</p>
+								<p>
+									To simplify things, I chose to merge the current dataset with the historical dataset. From there, I extracted the [IncidentNum, roughX, roughY] from the merged dataset into a new excel document since I wanted to keep the output 
+									separate that of the main dataset. The reason being is that I am going to use Python to convert
+									the RoughX and RoughY coordinates into a format that can be used by Tableau. From within Tableau and SQL Server, joining the transformed coordinate data to the incidentnum on the main dataset can be done easily now.
+								</p>
+								<iframe src="https://nbviewer.jupyter.org/url/E:/project1_coordinate_conversion.html" width="100%" height="500px"></iframe>
+
+
+								</p>
+							</section>
+
+					</div>
+
+				<!-- Footer -->
+					<footer id="footer">
+						<section>
+							<form method="post" action="#">
+								<div class="fields">
+									<div class="field">
+										<label for="name">Name</label>
+										<input type="text" name="name" id="name" />
+									</div>
+									<div class="field">
+										<label for="email">Email</label>
+										<input type="text" name="email" id="email" />
+									</div>
+									<div class="field">
+										<label for="message">Message</label>
+										<textarea name="message" id="message" rows="3"></textarea>
+									</div>
+								</div>
+								<ul class="actions">
+									<li><input type="submit" value="Send Message" /></li>
+								</ul>
+							</form>
+						</section>
+						<section class="split contact">
+							<section class="alt">
+								<h3>Address</h3>
+								<p>1234 Somewhere Road #87257<br />
+								Nashville, TN 00000-0000</p>
+							</section>
+							<section>
+								<h3>Phone</h3>
+								<p><a href="#">(000) 000-0000</a></p>
+							</section>
+							<section>
+								<h3>Email</h3>
+								<p><a href="#">info@untitled.tld</a></p>
+							</section>
+							<section>
+								<h3>Social</h3>
+								<ul class="icons alt">
+									<li><a href="#" class="icon brands alt fa-twitter"><span class="label">Twitter</span></a></li>
+									<li><a href="#" class="icon brands alt fa-facebook-f"><span class="label">Facebook</span></a></li>
+									<li><a href="#" class="icon brands alt fa-instagram"><span class="label">Instagram</span></a></li>
+									<li><a href="#" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+								</ul>
+							</section>
+						</section>
+					</footer>
+
+				<!-- Copyright -->
+					<div id="copyright">
+						<ul><li>&copy; Untitled</li><li>Design: <a href="https://html5up.net">HTML5 UP</a></li></ul>
+					</div>
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
