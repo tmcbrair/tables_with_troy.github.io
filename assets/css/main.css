@@ -2679,6 +2679,8 @@ input, select, textarea {
 			display: flex;
 			justify-content: center; /* centers the images horizontally */
 			align-items: center; /* centers the images vertically */
+			height: 350px;
+			overflow: hidden;
 			gap: 1rem; /* space between the images */
 		}
 		
