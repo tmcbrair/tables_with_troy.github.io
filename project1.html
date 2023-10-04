@@ -31,7 +31,8 @@
 						</ul>
 						<ul class="icons">
 							
-							<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+							<li><a href="https://www.linkedin.com/in/troymcbrair/" class="icon brands alt fa-linkedin" target= "_blank"><span class="label">linkedin</span></a></li>
+							<li><a href="https://tmcbrair.github.io/tables_with_troy.github.io/" class="icon brands alt fa-github" target= "_blank"><span class="label">GitHub</span></a></li>
 						</ul>
 					</nav>
 
@@ -48,7 +49,7 @@
 									</p>
 								</header>
 								<div class="image main"><img src="images/pic01.jpg" alt="" /></div>
-								<p>The first step in this journey is to find our datasets. Lucky for me, Milwaukee has some amazing datasets for public use. Much of the data does have an API that could have been utilized, however at the time when this project was done, I did not have the skillset
+								<p>The first step in this journey is to find our datasets and see if they contain the relevant data that we'd need to conduct the analysis. Lucky for me, Milwaukee has some amazing datasets for public use. Much of the data does have an API that could have been utilized, however at the time when this project was done, I did not have the skillset
 									to use that API natively within Jupyter. </p>
 								
 								<p><a href="https://data.milwaukee.gov/dataset/wibrarchive/resource/395db729-a30a-4e53-ab66-faeb5e1899c8">Historical dataset(2005-2022)</a></p>
@@ -56,23 +57,116 @@
 								
 
 								<p> 
-									Now that we have our data, it's time to explore and clean! Opening both datasets within Excel first since they would both need to be converted to Excel format for better integration with SQL Server anyways. I reviewed and found that IncidentNum does vary
+									Now that we have our data, it's time to explore and clean! Upon opening both datasets, I reviewed the columns to see which ones would be most useful for our project and listed them below. 
+									<ul>
+										<li><b>Incidentnum </b>- This is the unique identifier that will be used to join data</li>
+										<li><b>roughX and roughY</b> - These coordinates will be used to map out where each incident takes place.</li>
+										<li><b>Zipcode</b> - Zipcodes will be used to chart a broader view on a map to show which zipcodes have the most activity and potentially uncover any movement of incidents from one portion of the city to another</li>
+										<li><b>Reporteddatetime</b> - While I will be using reportedyear and reportedmonth more frequentyly during this project, the reporteddatetime will allow me to see times of day that each incident is reported.
+										<li><b>[Arson, AssaulOffense, Burglary, CriminalDamage,...]</b> - Incident types will be used for aggregation and comparison</li>
+										</li>
+									</ul>
+									While reviewing, I found that IncidentNum does vary
 									between INT and String. This is due to the way in which the Milwaukee Police Department started the "P2C" program in October 2022, which allows for citizens to self report crimes without police taking the formal incident. Those incidents that were reported
-									by the citizens begins with P2C.
+									by citizens begin with P2C. We also have each crime listed with a boolean [0][1] to determine the type of incident. One item to note would be that there are some entries that contain 2 or more [1]'s which pertain that at the time of the incident, we can have more than one incident type. 
+									We also have quite a few NULL values under [zipcode, roughX, roughY, Location] which we will attempt to resolve using joined datasets within SQL and some python scripts later on.
 								</p>
+								
+								
 								<p>
-									Since the "incidentnum" is the column that will be used to tie together all of the data later on, I made sure that we were void of nulls and blanks.</p>
-								</p>
-								<p>
-									To simplify things, I chose to merge the current dataset with the historical dataset. From there, I extracted the [IncidentNum, roughX, roughY] from the merged dataset into a new excel document since I wanted to keep the output 
+									Now that we know what our data looks like and what we should need to proceed, let's get going! To simplify things, I chose to merge the current dataset with the historical dataset. From there, I extracted the [IncidentNum, roughX, roughY] from the merged dataset into a new excel document since I wanted to keep the output 
 									separate that of the main dataset. The reason being is that I am going to use Python to convert
-									the RoughX and RoughY coordinates into a format that can be used by Tableau. From within Tableau and SQL Server, joining the transformed coordinate data to the incidentnum on the main dataset can be done easily now.
+									the RoughX and RoughY coordinates into a format that can be used by Tableau. From within Tableau and SQLite, joining the transformed coordinate data to the incidentnum on the main dataset can be done easily now.
 								</p>
-								<iframe src="https://nbviewer.jupyter.org/url/github.com/tmcbrair/tables_with_troy.github.io/blob/main/code_snips/project1_coordinate_conversion.ipynb" width="100%" height="700px"></iframe>
-								<iframe src="https://nbviewer.jupyter.org/url/github.com/tmcbrair/tables_with_troy.github.io/blob/main/code_snips/project1_coordinate_conversion1.ipynb" width="100%" height="700px"></iframe>
+								
+								<iframe src="https://nbviewer.jupyter.org/url/github.com/tmcbrair/tables_with_troy.github.io/blob/f08d99bf9498a2a9763ccd4cb370c637f95870cc/project1_coordinate_conversion_hidden.ipynb" width="100%" height="500px"></iframe>
+								<p>
+									
+								The end result below shows a before and after. </p>
+								<p>
+									<div class="image-container">
+										<img src="images\before.jpg" alt="Description 1" class="responsive-image">
+										<img src="images\after.jpg" alt="Description 2" class="responsive-image">
+									</div></p>
+								<p>Now that we have our coordinates for later use, we can continue cleaning the main datasets, but to do this, we'd need to import into SQL for better efficiency. Upon importing, I realized that the incidentnum columns in both the coordinates_conversion data 
+									as well as the main sheet, changed all incidentnums that began with string values(P2C) to NULL values. Since we're losing data, we'd need to figure out a better path forward. The solution I found was to go back into Excel, prior to importing the data and remove 
+								the string text prior to the actual case number. To do this, I simply ran =RIGHT(incidentnum, len(incidentnum)-3) which resulted in a trimmed incident number for all rows that began with anything other than an integer. From there, those cells were converted from STR to INT
+								for simple merging back into the main dataset. This was done to both the coordinate sheet as well as the main data. Hindsight on this would be identifying the inconsistencies much earlier on, and resolving prior to extracting the roughX and roughY data. </p>
 
-
+								<p>Now that we have our main file and coordinate file in hand, its time to put into SQLite which I've chosen to use for this project. I first wanted to look for duplicate values in the incidentnum since this plays such a crucial role in merging the tables together. 
+									Of the 831487 rows, there was a total of 153 incidentnums whos count(*) was >1 for a total of 227 duplicate entries as a result. Based on the size of the dataset, and majority of the duplicated incidentnum entries were historic in nature. Given that only 22% 
+									of the duplicates happened in the last 10 years, and the overall percentage of duplicates being neglible when compared to the main dataset, I decided to remove them all together.
 								</p>
+								<p>With coordinates and incidentnum out of the way, it was time to work on the zipcode. This one gets a little more interesting as I chose to look at using a master housing database from the city of Milwaukee to crossreference any potential joins on the Location.
+									The goal being that if I can get a match, the zipcode would then be present on the main property database. 
+								</p>
+								<p>Dataset for Milwaukee Homes: <a href="https://data.milwaukee.gov/dataset/mprop">Master Property Record</a></p>
+								<p>Within this dataset, we're only concerned about the zipcodes associated with what will be a concatinated address within SQL. The following queries with some modification to the concat function to find any variations was used to fill in some of the missing zipcodes.</p>
+								<p><pre>
+									<code>
+SELECT housing_data.geo_zip_code as Housing_data_zip, new_complete_data.zip as Incident_list_zip, housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype as Street_Address from housing_data
+	JOIN new_complete_data on new_complete_data.location = housing_data.house_nr_lo || " " || housing_data.sdir || " " || housing_data.street || ' ' || housing_data.sttype
+	WHERE new_complete_data.zip is null
+										
+UPDATE new_complete_data
+	SET zip = housing_data.geo_zip_code
+	FROM housing_data
+	WHERE new_complete_data.location = housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype
+AND new_complete_data.zip IS NULL;								
+									</code>
+									</pre>
+								</p>
+								
+									
+								<P>Initially we were around 15357 missing zipcodes and now we're down to 15117. Very small percentage, but we got some other ways to maybe get this number down a bit. So the next thought process was running a process within Python that would search for the adddress
+									and report back either the zipcode or a string letting us know the address could not be found. The limitations with this process as well as the other one is that it relies heavily on the address being in the correct format on the incident list to match up to the 
+									results found. What I did to help the search function was add "Milwaukee" after each address within Excel using a concat function prior to running the python script. This kept the main modifications off the main dataset and would allow for easier merging later on as we've been doing.
+									<iframe src="https://nbviewer.jupyter.org/url/github.com/tmcbrair/tables_with_troy.github.io/blob/e304b420965457784d4771b6e7de1daa1f065e7a/Find%20Zipcode%20based%20on%20Address_hidden_path.ipynb" width="100%" height="400px"></iframe>
+
+								</P>
+								<P>The following query takes the newly created excel file and updates our main data table with the Location being the item that is joined on. The addresses will match exactly since the list itself was taken from the main dataset directly. The only variable 
+									is if the python scripe was able to find the zipcode for that address or not. 
+								</P>
+								<p>
+									<pre>
+									<code>
+UPDATE new_complete_data
+SET zip = (
+    SELECT Address_Python_scraped.zipcode
+    FROM Address_Python_scraped
+    WHERE Address_Python_scraped.address = new_complete_data.location
+    AND length(Address_Python_scraped.zipcode) = 5
+)
+WHERE EXISTS (
+    SELECT 1
+    FROM Address_Python_scraped
+    WHERE Address_Python_scraped.address = new_complete_data.location
+    AND length(Address_Python_scraped.zipcode) = 5
+)
+AND new_complete_data.zip IS NULL;
+									</code>
+								</pre></p>
+								<P>With the Python address scrape done and merged with our database, we've successfully lowered the NULL zipcodes from 15117, to 8840. To continue further and be more efficient, we'd need to integrate into Googles map API which would come at a cost. Perhaps at a later
+									time and with more experience it's something that could be done to truly have an accurate database. At this point however, I am happy with getting our zipcode NULL values down to around 1%.
+								</P>
+								<p>
+									
+								</p>
+								<p>TO BE CONTINUED.
+									<ul>
+										<li>Use Python to scrape an interactive website containing all bus stop coordinates since Milwaukee does not publish this data directly within a standardized dataset located <a href="https://platform.remix.com/project/226791f7?latlng=43.02564,-87.90412,11.349">HERE</a></li>
+										<li>Instead of relying on zipcodes which are an inaccurate and antiquated way of grouping, we could use TRACT and FIPS instead which would give us more specific areas where the crimes are happening
+										</li>
+										<li>Using census data #S1903, pull up data for the past 5 years to see any changing trends within Milwaukee. Trends to focus on would be graduation rate, households with single parent, median household income, etc to 
+											potentially help explain why crime is happening where it is and potentially figure out ways to resolve it
+										</li>
+										<li>Check the general vacinity of certain characteristics of the area relative to incidents being reported(ex. Proximity to police station, firestation, school, bus stop, bank, bars, restuarant, etc)</li>
+										
+										
+									</ul>
+								</p>
+
+								
 							</section>
 
 					</div>
@@ -103,33 +197,28 @@
 						<section class="split contact">
 							<section class="alt">
 								<h3>Address</h3>
-								<p>1234 Somewhere Road #87257<br />
-								Nashville, TN 00000-0000</p>
+								<p>Milwaukee, Wisconsin 53207
+								</p>
 							</section>
 							<section>
 								<h3>Phone</h3>
-								<p><a href="#">(000) 000-0000</a></p>
+								<p><a href="#">203-687-6468</a></p>
 							</section>
 							<section>
 								<h3>Email</h3>
-								<p><a href="#">info@untitled.tld</a></p>
+								<p><a href="#">tmcbrair11@gmail.com</a></p>
 							</section>
 							<section>
 								<h3>Social</h3>
 								<ul class="icons alt">
-									<li><a href="#" class="icon brands alt fa-twitter"><span class="label">Twitter</span></a></li>
-									<li><a href="#" class="icon brands alt fa-facebook-f"><span class="label">Facebook</span></a></li>
-									<li><a href="#" class="icon brands alt fa-instagram"><span class="label">Instagram</span></a></li>
-									<li><a href="#" class="icon brands alt fa-github"><span class="label">GitHub</span></a></li>
+									<li><a href="https://www.linkedin.com/in/troymcbrair/" class="icon brands alt fa-linkedin" target= "_blank"><span class="label">linkedin</span></a></li>
+									<li><a hrSef="https://tmcbrair.github.io/tables_with_troy.github.io/" class="icon brands alt fa-github" target= "_blank"><span class="label">GitHub</span></a></li>
 								</ul>
 							</section>
 						</section>
 					</footer>
 
-				<!-- Copyright -->
-					<div id="copyright">
-						<ul><li>&copy; Untitled</li><li>Design: <a href="https://html5up.net">HTML5 UP</a></li></ul>
-					</div>
+				
 
 			</div>
 
