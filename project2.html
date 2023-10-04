@@ -1,0 +1,320 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Tables With Troy</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+							<li><a href="index.html">Let's Go Home</a></li>
+							<li class="active"><a href="generic.html">All Projects</a></li>
+							<li><a href="elements.html">Additional Resourcess</a></li>
+						</ul>
+						<ul class="icons">
+							
+							<li><a href="https://www.linkedin.com/in/troymcbrair/" class="icon brands alt fa-linkedin" target= "_blank"><span class="label">linkedin</span></a></li>
+							<li><a href="https://tmcbrair.github.io/tables_with_troy.github.io/" class="icon brands alt fa-github" target= "_blank"><span class="label">GitHub</span></a></li>
+						</ul>
+					</nav>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Post -->
+							<section class="post">
+								<header class="major">
+									
+									<h1>Milwaukee Housing Market Analyis</h1>
+									<p>The goal of this project is to simply explore the local Milwaukee housing market. Having seen lots of small bungalows go up for sale in my zipcode(53207) for WAY over asking, I was genuinely curious to see the driving forces behind why people are paying as much as they are in the locations they chose. We'll start with cleaning some datasets, go over some high level items like interest rates, look at local housing inventory, and then explore the data a little further to potentially uncover some things we didn't know going into this.
+									</p>
+								</header>
+								<div class="image main"><img src="images/milwaukee.jpg" alt="" /></div>
+                                <p>To begin, we first needed the data we want to review. In this case, we're curious about not only the sales happening in Milwaukee, but also to reference against the master property dataset. 
+                                </p>
+                                <p><a href="https://data.milwaukee.gov/dataset/property-sales-data" >Current and Historical Housing Sales(2002-2022) </a></p>
+                                <p><a href="https://data.milwaukee.gov/dataset/mprop">Master Property data containing all homes in the city of Milwaukee</a></p>
+                                <p>Now that we have our data, I want to see about simply merging the sales files together for easier use later on. Comparing the data between the historical data(2002-2018) and current data(2019-2022), I noticed a discrepancy
+                                    in the type of date used in the histoical datasets. To correct this, I converted the string YYYY-MM to a standard date format of MM-DD-YYYY using =DATE(LEFT(SALE_DATE),4),RIGHT(SALEDATE,2),1) which will not get the actual day of the month as it's not in the original data, but will keep the dates consistant across
+                                    the tables. 
+                                </p>
+                                <p>With our date corrected on the historical dataset, I opted to now merge it with the 19-22 dataset. I checked the dates first and everything appears to be in the same format now. </p>
+                                <p>From here, I wanted to review our Sale_Price column as this is a key data point we'd be reviewing. I constrained for NULL and anything that appeared to be atypical(0's, low numbers, etc) to see what was going on. Based on the results,
+                                    the total atypical values totaled around 60 rows. Of those 60, I was able to independantly validate the sale price using public data to fill in the majority of the Residential property type homes. The other condominiums, commercial space,
+                                    and vacant land I did not care about since I would not be including those items in the analysis. 
+                                </p>
+                                <P>Speaking of property type. We'll look at that next. When looking at this data, I noticed a total of 12 blanks. Using google as well as the [style] column in the data, it was easy to determine the type of property. From here, 
+                                    I reviewed the "Vacant" vs "Vacant Land", only to determine that the single entry of Vacant should be updated to Vacant Land. I also reviewed the "Exempt" property type. Based on the address, these were either all residential or commercial, 
+                                    and were updated accordingly to match the rest of the property types.
+                                </P>
+                                <P>Tax keys were all in order, so I moved on to the Address column. In total, there were 4 NULL values where NULL was an entry, so I was able to find this by sorting by name>largest first. Since there were only 4 entries without values, 
+                                    I used <a href="https://assessments.milwaukee.gov/default.asp">https://assessments.milwaukee.gov/default.asp</a> to pull up each taxkey successfully.
+                                </P>
+                                <P>
+                                    Next column was the [Sale_date]. Using Excel, I was able to see in the filter that two homes had sale dates that were not within the bounds of the rest of the data as they were set in 2024. To correct this, it was just a matter of going into zillow to determine the correct sale date. Since 
+                                    we knew the sale price, it was easy to line up the sale date.
+                                </P>
+                                <p>Up next was checking for any duplicates in our data. To do this, I simply created a pivot table within Excel and put the Address in Row and Values. From there, I changed the count to Distinct
+                                    which should only show distinct instances and identify any true duplicates, which there were none when we sorted by Highest > Lowest of the Distinct Count column which is what we were hoping to see.
+                                </p>
+								<P>
+                                    Final bit to clean is the Master Housing Data file. The key items on this dataset are the following: 
+                                    <ul>
+										<li><b>Geo_zip_code </b> - Will be used to highlight areas of movement</li>
+										<li><b>Taxkey</b> - Used to merge the sales_data with the master dataset</li>
+										<li><b>C_A_Total</b> - This item shows the total assessed value of the property as determined by the city assessor's office. This will be interesting to see how much higher propertys are selling for vs what the city assess's the home at</li>
+										</li>
+									</ul>
+                                </P>
+                                <P>
+                                    We'll begin with the zipcodes. Using an excel table, we can see that there are 12 properties without a NULL zipcode.  If there was a larger NULL presense, I would likely
+                                    try to see if I could find additional datasets with addresses to see if I could join and replace the NULL values.  However since we only had a few missing values, I turned to google. Once those were corrected, I reviewed the overall zipcodes again
+                                    for accuracy. I found a few under "53007" that are not Milwaukee zipcodes. Using google, I was able to determine the accurate zipcode of 53225 for all of the properties with 53007.
+                                </P>
+                                <p>
+                                    Now that we have the Master Housing data cleaned, it was time to import into SQL Server. Once both tables were loaded, I did a general JOIN between the both based on the Taxkey to see if there was any irregularities between data 
+                                    that could throw off our final figures. One of those points is the bedroom count. The query below was used to isolate the differences.
+                                    <p><pre>
+                                        <code>
+SELECT address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data s
+JOIN housing_data h on h.taxkey = s.Taxkey
+WHERE Bdrms > 2 AND bdrms != bedrooms
+ORDER by bed_difference							
+                                        </code>
+                                        </pre>
+    
+                                </p>
+                                <P>
+                                    It's interesting to see at this point, where data can be thrown off based on human error done at the county level as well as the REO agent when the property was LISTED. My thought process on this is that we want to take
+                                    the lessor of the two values as these were determined to be most accurate. The end result would of course be keeping the lessor values if they are present on the sales_data table, but update sales_data if the bedroom count 
+                                    is greater than the county reported figure. Before making this update, I took a sample size from the below query to see if the change that would be made would do more damage than good. The end result from doing a manual sample
+                                    of around 60 addresses for a confidence level of 90%, is that 58 of the 60 addresses that I reviewed in this sample set, had the county reporting the bed count correctly with the sales_data being incorrect. This discrepancy is more prevelant
+                                    on homes that are duplex's with the assumption that the REO agent reviews the county house data, sees the bed count listed at the county level, and then multiplys that figure by the unit count. The reason for having the bedroom count >=1 
+                                    from the housing_data table is due to the county reporting some homes as having no bed counts. In this case, the data will resort to the sales data table for the bed count as this is going to be assumed as being more accurate.
+                                    <p><pre>
+                                        <code>
+SELECT proptype, address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data
+JOIN housing_data on housing_data.taxkey = sales_data.Taxkey
+WHERE Bdrms > bedrooms and bedrooms >=1
+ORDER by bdrms						
+                                        </code>
+                                        </pre>
+    
+                                </p>
+
+                                </P>
+                                <p>
+                                    In addition to comparing the tables for the bedcount, I constrained for whever "BDRMS"(bedcount) = 0 within the sales data table. I set a default value to 1 if the property is residential since you can't have a home without at least 
+                                    1 bedroom. This same thought process is going to be applicable to the bathrooms[fbath, hbath] and number of rooms[nr_of_rooms], but only after updating the sales data from the housing data as a primary attempt to gather correct data. 
+                                </p>
+                                <p>
+                                    Interestingly enough, when comparing the bathroom count similar to how I compared the bedroom count, the sales_data actually has the majority of the bath counts correct in instances where the total count is higher than that of the main housing_data.
+                                    As a final measure, I set the bath count to 1 if 0 for all remaining residential and condo's since it's highly improbable that these residences have no bathrooms. While 1 may not be the correct count, without finding the exact data, at least having
+                                    a 1 is a good starting point for our dataset since any residence will have at the very least, 1 full bathroom.
+                                </p>
+                                <P>
+                                    Next is Halfbaths, or [powder_rooms] as labeled within the housing_data. This was confirmed by using the Master Property Data located on this page
+                                    <a href="https://data.milwaukee.gov/dataset/mprop/resource/3d94613b-a1df-4ed1-86d9-d9205925e2ab">Milwaukee Master Property File Documenation </a>
+                                    
+                                </P>
+                                <p>
+                                    For Finished Square Feet, I decided to only update NULL or 0 values if the master property file had the data. There are a lot of variations between the sales data and the main housing data, however I have personal
+                                    experience with these type of variations during my time reviewing appraisals, and this is considered typical. I decided to leave the variations alone since the county data would prevail in the event of any unknown data, with the sale reported
+                                    figures being used as the primary source. That being said, the majority of the square footage was lessor on the sales data compared to the main property data, so I chose to leave it alone. The ultimate
+                                    reason for sales data being more accurate in a sense would be that a realtor would be visiting the home and personally identifying the approximate squarefootage of the property in addition to any undisclosed improvements to the county. County data is often times wrong in the event that a home doesn't 
+                                    go up for sale in a long time, so the county's information slowly becomes outdated as homes are remodeled, additions put on, or other features added that the city may not be aware of. 
+                                    There were 5 remaining properties that had a zero value after the above updates. I found 4 of them were vacant land, so I updated accordingly. And the remainder was vacant land, but was recently built on in 2023, so I manually
+                                    updated the square footage and it's other attributes.
+                                </p>
+                                <P>
+                                    Given that both datasets are cleaned, it was time to review both and potentially integrate other data into the mix. For the purpose of this task,
+                                    I chose to only look at residential data. Commercial space, vacant land, condo's etc. were tougher to find accurate features on to help fill in the blanks. Additionally, these types of properties have thier own
+                                    trends and patterns, so it was best to segment out each type of property instead of grouping together in the analysis. 
+                                    <pre>
+                                    <code>
+SELECT year(sale_date) as year_sold, count(*) from sales_data
+WHERE proptype = 'residential'
+GROUP by year(sale_date)
+ORDER by year_sold
+                                    </code></pre>
+                                    The above query simply looks at our total sales over time, focusing only on residential homes. The query below takes this one step further, looking at sale price over time. 
+
+                                    
+                                </P>
+                                <P>
+                                    <pre>
+                                        <code>
+SELECT year(sale_date) as Year_sold, avg(sale_price) from sales_data
+WHERE proptype = 'residential'
+GROUP by year(sale_date)
+ORDER by year_sold
+                                        </code>
+                                        
+                                    </pre>
+                                    
+                                </P>    
+                                <p>
+                                    Below is what this looks like on a chart. As we can see. Since 2009, the average home price was remaining relatively stable until the end of 2019 when home values sunk as this was the beginning of the COVID outbreak.
+                                    The market was uncertain as to what would happen, with buyers unwilling to go out and see the homes that were for sale, sellers were selling below asking in an attempt to motivate sellers. Then in March of 2020, home sales
+                                    started to increase as interest rates dropped, motivating buyers who were on the fence about purchasing, and getting them actively buying in the marketplace. This in turn, inflated home values as buyers were more willing to spend
+                                    more on a home, with less money down, maximizing what they could afford due to a relatively low monthly payment.
+                                    <div class='tableauPlaceholder' id='viz1696449050229' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing2&#47;SalevsValue&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='MilwaukeeHousing2&#47;SalevsValue' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing2&#47;SalevsValue&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696449050229');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+                                <p>
+                                    Below you'll see our mortgage rates over time that correlate to the above sale prices. I reviewed both the <a href="https://fred.stlouisfed.org/series/MORTGAGE30US">30 Year Mortgage Rates</a> as well as <a href="https://fred.stlouisfed.org/series/MORTGAGE15US">15 Year Mortgage Rates.</a>
+                                    As you can see, amongst the great refinance boom of 2020, brought in a sellers market where buyers were refinancing thier properties, unlocking
+                                    additional room in their debt to income ratio which allowed them to further push the boundries of what they could afford in the market, allowing them to go above asking price.
+                                    <div class='tableauPlaceholder' id='viz1696342265942' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing_16959243036210&#47;30vs20&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='MilwaukeeHousing_16959243036210&#47;30vs20' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing_16959243036210&#47;30vs20&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696342265942');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+                                </p>
+                                <p>
+                                    One other item I wanted to visit while looking at our home prices, was how the supply and demand was looking given this surge of purchases in the last couple years. To do this, I used <a href="https://fred.stlouisfed.org/series/ACTLISCOU55079">FRED's Active Housing Data</a> to help uncover any potential trends. What I did to start was aggregate all the sales into Months which then matched the inventory dataset. From there, I put both on a dual axis to show the inverse relationship they are currently having on one another. What's interesting to see just based on the inventory alone, is that in 2020, you can see the active listings were slow to come into the market as sellers were weary of having individuals coming into thier home for fear of contracting COVID. From there, what we do see is that the overall housing inventory is shrinking whereas demand is increasing. The end result of course, is a pricetag above asking for any potential buyers. As you can see in the difference chart, the inventory peaks each year are getting smaller as well as the inventory troughs, showing a well defined trend of lessoning inventory.
+                                    <div class='tableauPlaceholder' id='viz1696450089294' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing_16959243036210&#47;InventoryDash&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='MilwaukeeHousing_16959243036210&#47;InventoryDash' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing_16959243036210&#47;InventoryDash&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696450089294');                    var vizElement = divElement.getElementsByTagName('object')[0];                    if ( divElement.offsetWidth > 800 ) { vizElement.style.minWidth='1150px';vizElement.style.maxWidth='100%';vizElement.style.minHeight='1017px';vizElement.style.maxHeight=(divElement.offsetWidth*0.75)+'px';} else if ( divElement.offsetWidth > 500 ) { vizElement.style.minWidth='1150px';vizElement.style.maxWidth='100%';vizElement.style.minHeight='1017px';vizElement.style.maxHeight=(divElement.offsetWidth*0.75)+'px';} else { vizElement.style.width='100%';vizElement.style.minHeight='950px';vizElement.style.maxHeight=(divElement.offsetWidth*1.77)+'px';}                     var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+                                    
+                                </p>
+                                <p>
+                                    Now that we know what the Milwaukee market looks like, what mortgage rates look like, and how that all relates to eachother in our market, it's time to explore our data a little more. To start, I wanted to simply look at correlations
+                                    in data points within my dataset. To do this, we can use Python and the following code. 
+                                    <pre>
+                                        <code>
+import pandas as pd
+
+# Loads the data from the excel file
+data = pd.read_excel("path to residential sales data file.xlsx")
+
+# Places the data into a correlational matrix
+correlation_matrix = data.corr()
+
+correlation_matrix
+                                        </code>
+                                    </pre>
+                                </p>
+                                <p>
+                                    The resulting correlation output is as follows.
+                                    <div class="image main"><img src="images/correlation.jpg" alt="" /></div>
+
+                                </p>
+                                <P>
+                                    We can better visualize this using the Seaborn and Matplotlib with the following code within python.
+                                    <pre>
+                                        <code>
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Size of Plot
+plt.figure(figsize=(14, 10))
+
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', vmin=-1, vmax=1)
+
+plt.title("Correlation Matrix Heatmap")
+
+plt.show()
+                                        </code>
+                                    </pre>
+                                    <div class="image main"><img src="images/heatmap.jpg" alt="" /></div>
+                                </P>
+                                <P>
+                                    The code below takes a look specifically at the [sale_price] compared to [county_value]. The justification is that I wanted to see approximately when buyers began to largely start <i>overpaying</i> for homes in our market. What I 
+                                    ended up finding was actually pretty interesting. While it comes to no surprise that buyers are more motivated to purchase during the summer months, and sellers are more willing to sell, I also came to discover the price difference
+                                    that one could potentially pay for a home during December, January, or February compared to the peak buying months of June. Below is a dashbboard of how the buying patterns have changed and when the most sales are occuring in the market
+                                    place. In addition, I attached a slider that shows the percentage above asking when filtering the dataset since an overall average across the entire dataset would not represent a changing market like we've experienced
+                                    from 2019 through 2022. The solution in this case is using a calculated field 
+                                    to take all the years <i>after</i> the date on the slider, so you can better guage when to buy a home based on the general market. If you move the slider to say, 2014, it will only include 2014, 2015, 2016.... and so on. 
+                                    That being said, you can very clearly see the green and red positions across each averaged year used in the calculation, showing that even as far back as 2009, we now know that the best time to purchase a home if you're looking for the best
+                                    deal, would be in January.
+                                    <pre>
+                                        <code>
+SELECT address, year(sale_date), sale_price, county_value, ((sale_price-county_value)/county_value)*100 as percentage_diff 
+FROM sales_data
+WHERE proptype = 'residential' and county_value >0
+ORDER by percentage_diff
+                                        </code>
+                                    </pre>
+                                    
+<div class='tableauPlaceholder' id='viz1696448789981' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing2&#47;BuyingTrendsViz&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='MilwaukeeHousing2&#47;BuyingTrendsViz' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing2&#47;BuyingTrendsViz&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696448789981');                    var vizElement = divElement.getElementsByTagName('object')[0];                    if ( divElement.offsetWidth > 800 ) { vizElement.style.minWidth='1150px';vizElement.style.maxWidth='100%';vizElement.style.minHeight='1017px';vizElement.style.maxHeight=(divElement.offsetWidth*0.75)+'px';} else if ( divElement.offsetWidth > 500 ) { vizElement.style.minWidth='1150px';vizElement.style.maxWidth='100%';vizElement.style.minHeight='1017px';vizElement.style.maxHeight=(divElement.offsetWidth*0.75)+'px';} else { vizElement.style.width='100%';vizElement.style.minHeight='1050px';vizElement.style.maxHeight=(divElement.offsetWidth*1.77)+'px';}                     var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
+                                <p>
+                                    
+                                </p>
+								
+							</section>
+
+					</div>
+
+				<!-- Footer -->
+					<footer id="footer">
+						<section>
+							<form method="post" action="#">
+								<div class="fields">
+									<div class="field">
+										<label for="name">Name</label>
+										<input type="text" name="name" id="name" />
+									</div>
+									<div class="field">
+										<label for="email">Email</label>
+										<input type="text" name="email" id="email" />
+									</div>
+									<div class="field">
+										<label for="message">Message</label>
+										<textarea name="message" id="message" rows="3"></textarea>
+									</div>
+								</div>
+								<ul class="actions">
+									<li><input type="submit" value="Send Message" /></li>
+								</ul>
+							</form>
+						</section>
+						<section class="split contact">
+							<section class="alt">
+								<h3>Address</h3>
+								<p>Milwaukee, Wisconsin 53207
+								</p>
+							</section>
+							<section>
+								<h3>Phone</h3>
+								<p><a href="#">203-687-6468</a></p>
+							</section>
+							<section>
+								<h3>Email</h3>
+								<p><a href="#">tmcbrair11@gmail.com</a></p>
+							</section>
+							<section>
+								<h3>Social</h3>
+								<ul class="icons alt">
+									<li><a href="https://www.linkedin.com/in/troymcbrair/" class="icon brands alt fa-linkedin" target= "_blank"><span class="label">linkedin</span></a></li>
+									<li><a hrSef="https://tmcbrair.github.io/tables_with_troy.github.io/" class="icon brands alt fa-github" target= "_blank"><span class="label">GitHub</span></a></li>
+								</ul>
+							</section>
+						</section>
+					</footer>
+
+				
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
