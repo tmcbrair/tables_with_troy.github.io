@@ -1,0 +1,231 @@
+<!DOCTYPE HTML>
+<!--
+	Massively by HTML5 UP
+	html5up.net | @ajlkn
+	Free for personal and commercial use under the CCA 3.0 license (html5up.net/license)
+-->
+<html>
+	<head>
+		<title>Tables With Troy</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="assets/css/main.css" />
+		<noscript><link rel="stylesheet" href="assets/css/noscript.css" /></noscript>
+	</head>
+	<body class="is-preload">
+
+		<!-- Wrapper -->
+			<div id="wrapper">
+
+				<!-- Header -->
+					<header id="header">
+						
+					</header>
+
+				<!-- Nav -->
+					<nav id="nav">
+						<ul class="links">
+							<li><a href="index.html">Let's Go Home</a></li>
+							<li class="active"><a href="generic.html">All Projects</a></li>
+							<li><a href="elements.html">Additional Resourcess</a></li>
+						</ul>
+						<ul class="icons">
+							
+							<li><a href="https://www.linkedin.com/in/troymcbrair/" class="icon brands alt fa-linkedin" target= "_blank"><span class="label">linkedin</span></a></li>
+							<li><a href="https://tmcbrair.github.io/tables_with_troy.github.io/" class="icon brands alt fa-github" target= "_blank"><span class="label">GitHub</span></a></li>
+						</ul>
+					</nav>
+
+				<!-- Main -->
+					<div id="main">
+
+						<!-- Post -->
+							<section class="post">
+								<header class="major">
+									
+									<h1>Quality Control Checklist</h1>
+									<p>I don't like making mistakes, and with the loan volume I would experience from time to time, I didn't want that stress to impact my decision making. To remedy this, I created this excel sheet to help better track a file's progress so that nothing gets missed. It features VBA, macros, and conditional formatting to help more efficiently utilize the document.
+									</p>
+								</header>
+								<div class="image main"><img src="images/quality.jpeg" alt="" /></div>
+								<p>A copy of this document can be found below.</p>
+								
+								<p><a href="https://github.com/tmcbrair/tmcbrair.github.io/blob/fcce7df2baf54db3312f79e831320ef746aefd2e/QC_Checklist.xlsm">QC Checklist</a></p>
+								
+								
+
+								<p> 
+									So let's start with explaining what this document is. To reiterate, as an underwriter, your goal is to make quick, but accurate, decisions. That's easy when a borrower is simply a W2 employee or your pipeline size is relatively small. However, once you get into more self employed borrowers and borrowers with a bunch of rental properties, I quickly realized that in order to not forget items that I see as I work through a file, I'd have to write them down. This started what is now a relatively detailed checklist. I will go through certain areas of the sheet to help point out features that I think are pretty cool. 
+								</p>
+								
+								
+								<p>
+									I'll start at the top and work my way down to make things easy so we're not clicking all over the place. The top features a Search Button that when clicked, opens up an input box for the user to enter a sheet name. 
+                                    When you press "ok", it will search for that sheet within the workbook, bringing you to the sheet if found. 
+                                </p>
+                                <p>
+                                    <div class="image-container">
+										<img src="images\search.jpg" alt="Description 1" >
+										
+									</div>
+                                </p>
+                                The VBA code for this is below. 
+                                    <pre>
+                                        <code>
+Sub SearchSheetName()
+Dim sName As String
+
+sName = InputBox("Enter sheet name to find in workbook:", "Sheet search")
+
+If sName = "" Then Exit Sub
+
+On Error Resume Next
+        ActiveWorkbook.Sheets(sName).Select
+        If Err = 0 Then Exit Sub
+On Error GoTo 0
+
+MsgBox "The sheet '" & sName & "' could not be found in this workbook", vbExclamation, "Search result"
+End Sub
+
+                                        </code>
+                                    </pre>
+								</p>
+								<p>
+                                Below the search button, is where I have my document date tracking which I found to be incredibly useful to help track when certain documents would expire and to alert me if a document has expired when I visit the sheet. It utilizes a formula to calculate X number of days from the date in the "orange" box in the image below, which then displays the final date in the box below. This section utilizes Conditional Formatting to do an If/Then statement for the date. If the calculated date is <i>after</i> today's date, the document is expired, and the box will turn red as seen in the "light green" box in the image below. 
+                                <div class="image-container">
+                                    <img src="images\dates.jpg" alt="dates" >
+                                    
+                                </div>
+                                The Conditional formatting structure can be seen below. 
+                                <div class="image-container">
+                                    <img src="images\conditional.jpg" alt="conditional" >
+                                    
+                                </div>
+								</p>
+								<p>
+                                    Also on the top of the sheet, you can find a "New Sheet" button. What this does is run a script in VBA that duplicates the active sheet X number of times. X being the number that is input in the prompt box that pops up when the button is clicked. 
+                                    <div class="image-container">
+                                        <img src="images\new_sheet.jpg" alt="dates" >
+                                        
+                                    </div>
+                                    The VBA code for this is below.
+                                    <pre>
+                                        <code>
+Public Sub DuplicateSheetMultipleTimes()
+    Dim n As Integer
+    On Error Resume Next
+    n = InputBox("How many copies of the active sheet do you want to make?")
+ 
+    If n >= 1 Then
+        For numtimes = 1 To n
+            ActiveSheet.Copy After:=ActiveWorkbook.Sheets(Worksheets.Count)
+        Next
+    End If
+End Sub
+                                        </code>
+                                    </pre>
+                                </p>
+                                <p>
+                                    Above the New Sheet button, is a counter. This counter tracks the number of sheets within the document so I can track the cumulative amount of files I've worked on. The formula used to do this is =COUNTA(INDEX(CountSheets,0))-3 which counts the number of sheets and then subtracts 3 as those pertain to the initial 3 master sheets present in the workbook that I didn't want counting towards my running total.
+                                </p>
+								<p>
+                                    Within the body of the sheet is where I chose to implement a way to track which items I reviewed. To do this, you could manually change the color of a cell, however that just isn't efficient. To solve this, I wrote a small VBA snippet that changes the color of the cell if it gets double clicked. Upon double clicking with your left mouse button, the cell will turn red, which to me means the item has been reviewed and cleared. If you double click again, you can remove the shading. I also added a feature using the left mouse button click to turn a cell yellow. To me, this meant an item was pending more information or wasn't entirely cleared yet. The left mouse button is more of an annoyance as you use the sheet and actively use your left mouse button for more options, however to remove the yellow shading, you'd just double click on the cell. The code for the red double click is below.
+                                    <pre>
+                                        <code>
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    
+        Cancel = True
+        Application.EnableEvents = False
+        If Target.Interior.Pattern = xlNone Then
+            Target.Interior.ColorIndex = 3  'red
+        Else
+            Target.Interior.Pattern = xlNone
+        End If
+    
+FallThrough:
+    Application.EnableEvents = True
+End Sub
+
+                                        </code>
+                                    </pre>
+                                    And the Right Mouse Button click to turn the cell yellow is below.
+                                    <pre>
+                                        <code>
+Private Sub Worksheet_BeforeRightClick(ByVal Target As Range, Cancel As Boolean)
+    Target.Interior.Color = vbYellow
+End Sub
+                                        </code>
+                                    </pre>
+								</p>
+								<p>
+                                    Hopefully that explains my thought process a little bit as I've built this sheet from the ground up. It is far from perfect and far from organized, but as the only person utilizing the sheet I didn't feel the need to, so this has worked very well for me. 
+                                </p>
+								
+
+								
+							</section>
+
+					</div>
+
+				<!-- Footer -->
+					<footer id="footer">
+						<section>
+							<form method="post" action="#">
+								<div class="fields">
+									<div class="field">
+										<label for="name">Name</label>
+										<input type="text" name="name" id="name" />
+									</div>
+									<div class="field">
+										<label for="email">Email</label>
+										<input type="text" name="email" id="email" />
+									</div>
+									<div class="field">
+										<label for="message">Message</label>
+										<textarea name="message" id="message" rows="3"></textarea>
+									</div>
+								</div>
+								<ul class="actions">
+									<li><input type="submit" value="Send Message" /></li>
+								</ul>
+							</form>
+						</section>
+						<section class="split contact">
+							<section class="alt">
+								<h3>Address</h3>
+								<p>Milwaukee, Wisconsin 53207
+								</p>
+							</section>
+							<section>
+								<h3>Phone</h3>
+								<p><a href="#">203-687-6468</a></p>
+							</section>
+							<section>
+								<h3>Email</h3>
+								<p><a href="#">tmcbrair11@gmail.com</a></p>
+							</section>
+							<section>
+								<h3>Social</h3>
+								<ul class="icons alt">
+									<li><a href="https://www.linkedin.com/in/troymcbrair/" class="icon brands alt fa-linkedin" target= "_blank"><span class="label">linkedin</span></a></li>
+									<li><a hrSef="https://tmcbrair.github.io/tables_with_troy.github.io/" class="icon brands alt fa-github" target= "_blank"><span class="label">GitHub</span></a></li>
+								</ul>
+							</section>
+						</section>
+					</footer>
+
+				
+
+			</div>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/jquery.scrollex.min.js"></script>
+			<script src="assets/js/jquery.scrolly.min.js"></script>
+			<script src="assets/js/browser.min.js"></script>
+			<script src="assets/js/breakpoints.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
