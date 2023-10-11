@@ -1,304 +1,325 @@
---CLEANING
-select address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where Bdrms is null
-	
+-- CLEANING
+SELECT s.address, s.bdrms, s.bedrooms, (s.bdrms-s.bedrooms) AS bed_difference 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.Bdrms IS NULL;
 
-select proptype, address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where Bdrms > bedrooms and bedrooms >=1
-	order by bdrms
+SELECT s.proptype, s.address, s.bdrms, s.bedrooms, (s.bdrms-s.bedrooms) AS bed_difference 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.Bdrms > s.bedrooms AND s.bedrooms >= 1
+ORDER BY s.bdrms;
 
---used to update the value from null to the county listed value
+-- Used to update the value from null to the county listed value
 UPDATE s
 SET s.Bdrms = h.bedrooms
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-WHERE s.Bdrms is null
+WHERE s.Bdrms IS NULL;
 
---used to update the value from 0 to whatever is listed by the county
-select address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where Bdrms = 0 and bdrms != bedrooms
-
-UPDATE s
-SET s.Bdrms = h.bedrooms
+-- Used to update the value from 0 to whatever is listed by the county
+SELECT s.address, s.bdrms, s.bedrooms, (s.bdrms-s.bedrooms) AS bed_difference 
 FROM sales_data s
-JOIN housing_data h ON s.Taxkey = h.Taxkey
-WHERE s.Bdrms = 0 and bdrms != bedrooms
-
---now the updates need to be a little more careful since we dont want to overwrite any data that could be correct
-select address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where Bdrms > bedrooms and bedrooms >=1
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.Bdrms = 0 AND s.bdrms != s.bedrooms;
 
 UPDATE s
 SET s.Bdrms = h.bedrooms
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-WHERE Bdrms > bedrooms and bedrooms >=1
+WHERE s.Bdrms = 0 AND s.bdrms != s.bedrooms;
 
---setting the number of bedrooms in residential property = 1 if 0
-select * from sales_data
-	where bdrms = 0 and proptype = 'residential' or bdrms = 0 and proptype = 'condominium'
+-- Now the updates need to be a little more careful since we don't want to overwrite any data that could be correct
+SELECT s.address, s.bdrms, s.bedrooms, (s.bdrms-s.bedrooms) AS bed_difference 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.Bdrms > s.bedrooms AND s.bedrooms >= 1;
 
-update S
+UPDATE s
+SET s.Bdrms = h.bedrooms
+FROM sales_data s
+JOIN housing_data h ON s.Taxkey = h.Taxkey
+WHERE s.Bdrms > s.bedrooms AND s.bedrooms >= 1;
+
+-- Setting the number of bedrooms in residential property = 1 if 0
+SELECT * 
+FROM sales_data s
+WHERE (s.bdrms = 0 AND s.proptype = 'residential') OR (s.bdrms = 0 AND s.proptype = 'condominium');
+
+UPDATE s
 SET s.Bdrms = 1
 FROM sales_data s
-WHERE bdrms = 0 and proptype = 'residential' or bdrms = 0 and proptype = 'condominium'
+WHERE (s.bdrms = 0 AND s.proptype = 'residential') OR (s.bdrms = 0 AND s.proptype = 'condominium');
 
---now to update the number of rooms on the sales data to that of the housing_data
+-- Now to update the number of rooms on the sales data to that of the housing_data
+SELECT s.proptype, s.address, s.nr_of_rms, h.NR_rooms, (s.nr_of_rms-h.NR_rooms) AS room_difference, s.bedrooms 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.nr_of_rms = 0 AND h.NR_rooms != s.nr_of_rms
+ORDER BY room_difference;
 
-select proptype, address, nr_of_rms, NR_rooms, (nr_of_rms-NR_rooms) as room_difference, bedrooms from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms = 0 and NR_rooms != nr_of_rms
-	order by room_difference
+SELECT s.proptype, s.address, s.nr_of_rms, h.NR_rooms, (s.nr_of_rms-h.NR_rooms) AS room_difference, s.bedrooms 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.nr_of_rms IS NULL
+ORDER BY room_difference;
 
-select proptype, address, nr_of_rms, NR_rooms, (nr_of_rms-NR_rooms) as room_difference, bedrooms from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms is null 
-	order by room_difference
-
-update S
+UPDATE s
 SET s.nr_of_rms = h.NR_rooms
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where nr_of_rms = 0 and NR_rooms != nr_of_rms
+WHERE s.nr_of_rms = 0 AND h.NR_rooms != s.nr_of_rms;
 
---now time to compare the values of each and get a little more defined as to what we update
-select address, nr_of_rms, nr_rooms, (nr_of_rms-nr_rooms) as room_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms > nr_rooms and nr_rooms >=1
+-- Now time to compare the values of each and get a little more defined as to what we update
+SELECT s.address, s.nr_of_rms, h.nr_rooms, (s.nr_of_rms-h.nr_rooms) AS room_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.nr_of_rms > h.nr_rooms AND h.nr_rooms >= 1;
 
-update S
+UPDATE s
 SET s.nr_of_rms = h.NR_rooms
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where nr_of_rms > nr_rooms and nr_rooms >=1
+WHERE s.nr_of_rms > h.nr_rooms AND h.nr_rooms >= 1;
 
---a few nulls persist still in the nr_of_rooms
-select address, nr_of_rms, nr_rooms, (nr_of_rms-nr_rooms) as room_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms > nr_rooms and nr_rooms >=1
+-- A few nulls persist still in the nr_of_rooms
+SELECT s.address, s.nr_of_rms, h.nr_rooms, (s.nr_of_rms-h.nr_rooms) AS room_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.nr_of_rms > h.nr_rooms AND h.nr_rooms >= 1;
 
-select address, nr_of_rms, nr_rooms, (nr_of_rms-nr_rooms) as room_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms is null and proptype = 'residential'
+SELECT s.address, s.nr_of_rms, h.nr_rooms, (s.nr_of_rms-h.nr_rooms) AS room_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.nr_of_rms IS NULL AND s.proptype = 'residential';
 
-update S
+UPDATE s
 SET s.nr_of_rms = h.NR_rooms
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where nr_of_rms is null and nr_rooms >0
+WHERE s.nr_of_rms IS NULL AND h.nr_rooms > 0;
 
---now to set all nr_of_rms to 1 on all condo and residential properties since you can't have no bedrooms
-select address, nr_of_rms, nr_rooms, (nr_of_rms-nr_rooms) as room_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms is null and proptype = 'residential' or nr_of_rms is null and proptype = 'condominium'
+-- Now to set all nr_of_rms to 1 on all condo and residential properties since you can't have no bedrooms
+SELECT s.address, s.nr_of_rms, h.nr_rooms, (s.nr_of_rms-h.nr_rooms) AS room_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE (s.nr_of_rms IS NULL AND s.proptype = 'residential') OR (s.nr_of_rms IS NULL AND s.proptype = 'condominium');
 
-update S
+UPDATE s
 SET s.nr_of_rms = 1
 FROM sales_data s
-where nr_of_rms is null and proptype = 'residential' or nr_of_rms is null and proptype = 'condominium'
+WHERE (s.nr_of_rms IS NULL AND s.proptype = 'residential') OR (s.nr_of_rms IS NULL AND s.proptype = 'condominium');
 
---lets do the same for all nr rooms with 0 rooms
-select address, nr_of_rms, nr_rooms, (nr_of_rms-nr_rooms) as room_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where nr_of_rms = 0 and proptype = 'residential' or nr_of_rms = 0 and proptype = 'condominium'
+-- Let's do the same for all nr rooms with 0 rooms
+SELECT s.address, s.nr_of_rms, h.nr_rooms, (s.nr_of_rms-h.nr_rooms) AS room_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE (s.nr_of_rms = 0 AND s.proptype = 'residential') OR (s.nr_of_rms = 0 AND s.proptype = 'condominium');
 
-update S
+UPDATE s
 SET s.nr_of_rms = 1
 FROM sales_data s
-where nr_of_rms = 0 and proptype = 'residential' or nr_of_rms = 0 and proptype = 'condominium'
+WHERE (s.nr_of_rms = 0 AND s.proptype = 'residential') OR (s.nr_of_rms = 0 AND s.proptype = 'condominium');
 
---now to clean our full_bath count
-select address, fbath, baths, (fbath-baths) as bath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where fbath = 0 and baths > 0
+-- Now to clean our full_bath count
+SELECT s.address, s.fbath, h.baths, (s.fbath-h.baths) AS bath_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.fbath = 0 AND h.baths > 0;
 
-select * from housing_data
+SELECT * FROM housing_data h;
 
---update null values first
-update S
+-- Update null values first
+UPDATE s
 SET s.fbath = h.baths
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where fbath is null and baths > 0
+WHERE s.fbath IS NULL AND h.baths > 0;
 
---now to do the fbaths that are zero
-select address, fbath, baths, (fbath-baths) as bath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where fbath = 0 and baths > 0
+-- Now to do the fbaths that are zero
+SELECT s.address, s.fbath, h.baths, (s.fbath-h.baths) AS bath_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.fbath = 0 AND h.baths > 0;
 
-update S
+UPDATE s
 SET s.fbath = h.baths
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where fbath = 0 and baths > 0
+WHERE s.fbath = 0 AND h.baths > 0;
 
---now to compare and contrast the two tables
-select address, fbath, baths, (fbath-baths) as bath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where fbath > baths and baths >=1
+-- Now to compare and contrast the two tables
+SELECT s.address, s.fbath, h.baths, (s.fbath-h.baths) AS bath_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.fbath > h.baths AND h.baths >= 1;
 
---now to set all bathroom counts to 1 if 0 on the sales data since you can't have zero bathrooms
-select fbath from sales_data
-	where fbath is null and proptype = 'residential' or fbath is null and proptype = 'condominium'
+-- Now to set all bathroom counts to 1 if 0 on the sales data since you can't have zero bathrooms
+SELECT s.fbath 
+FROM sales_data s
+WHERE (s.fbath IS NULL AND s.proptype = 'residential') OR (s.fbath IS NULL AND s.proptype = 'condominium');
 
-update S
+UPDATE s
 SET s.fbath = 1
 FROM sales_data s
-where fbath is null and proptype = 'residential' or fbath is null and proptype = 'condominium'
+WHERE (s.fbath IS NULL AND s.proptype = 'residential') OR (s.fbath IS NULL AND s.proptype = 'condominium');
 
---EXPLORING
---now to move on to half baths which are called powder rooms within the housing data. this was confirmed within the readme
-select address, hbath, powder_rooms, (hbath-powder_rooms) as halfbath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where hbath = 0 and proptype = 'residential' 
-	order by halfbath_diff
+-- EXPLORING
+-- Now to move on to half baths which are called powder rooms within the housing data. This was confirmed within the readme
+SELECT s.address, s.hbath, h.powder_rooms, (s.hbath-h.powder_rooms) AS halfbath_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.hbath = 0 AND s.proptype = 'residential'
+ORDER BY halfbath_diff;
 
-update S
+UPDATE s
 SET s.hbath = h.powder_rooms
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where powder_rooms > hbath
+WHERE h.powder_rooms > s.hbath;
 
-select address, hbath, powder_rooms, (hbath-powder_rooms) as halfbath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where hbath is null 
-	order by halfbath_diff
+SELECT s.address, s.hbath, h.powder_rooms, (s.hbath-h.powder_rooms) AS halfbath_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.hbath IS NULL
+ORDER BY halfbath_diff;
 
---since we've lined up the half baths already, it was time to populate any null values with 0 since a property does not need to have a half bath
-update S
+-- Since we've lined up the half baths already, it was time to populate any null values with 0 since a property does not need to have a half bath
+UPDATE s
 SET s.hbath = 0
 FROM sales_data s
-where hbath is null 
+WHERE s.hbath IS NULL;
 
-select * from sales_data
-where hbath is null
+SELECT * 
+FROM sales_data s
+WHERE s.hbath IS NULL;
 
-select address, hbath, powder_rooms, (hbath-powder_rooms) as halfbath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	--where powder_rooms > hbath
-	order by halfbath_diff
+SELECT s.address, s.hbath, h.powder_rooms, (s.hbath-h.powder_rooms) AS halfbath_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+ORDER BY halfbath_diff;
 
---need to remove the hbath outlier in the sales data tied to 6012 N 37th
-update S
+-- Need to remove the hbath outlier in the sales data tied to 6012 N 37th
+UPDATE s
 SET s.hbath = 1
 FROM sales_data s
-where address = '6012 N 37TH ST'
+WHERE s.address = '6012 N 37TH ST';
 
---finally to take care of finished square footage
-select address, fin_sqft, bldg_area, (fin_sqft-bldg_area) as halfbath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where fin_sqft = 0 and proptype = 'residential'
+-- Finally to take care of finished square footage
+SELECT s.address, s.fin_sqft, h.bldg_area, (s.fin_sqft-h.bldg_area) AS sqft_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.fin_sqft = 0 AND s.proptype = 'residential';
 
-update S
+UPDATE s
 SET s.fin_sqft = 1710
 FROM sales_data s
-where address =  '2222 E MORGAN AV'
+WHERE s.address = '2222 E MORGAN AV';
 
---lets do the same where sqft is zero
-select address, fin_sqft, bldg_area, (fin_sqft-bldg_area) as halfbath_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where fin_sqft = 0 and bldg_area > 0
+-- Let's do the same where sqft is zero
+SELECT s.address, s.fin_sqft, h.bldg_area, (s.fin_sqft-h.bldg_area) AS sqft_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.fin_sqft = 0 AND h.bldg_area > 0;
 
-update S
+UPDATE s
 SET s.fin_sqft = h.bldg_area
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where fin_sqft = 0 and bldg_area > 0
+WHERE s.fin_sqft = 0 AND h.bldg_area > 0;
 
---time to review side by side to see if county or sales data appears more accurate
-select address, fin_sqft, bldg_area, (fin_sqft-bldg_area) as halfbath_diff, sale_price from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where fin_sqft is null and proptype = 'residential' 
+-- Time to review side by side to see if county or sales data appears more accurate
+SELECT s.address, s.fin_sqft, h.bldg_area, (s.fin_sqft-h.bldg_area) AS sqft_diff, s.sale_price 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.fin_sqft IS NULL AND s.proptype = 'residential';
 
-update S
+UPDATE s
 SET s.proptype = 'Vacant Land'
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where fin_sqft is null and proptype = 'residential'
+WHERE s.fin_sqft IS NULL AND s.proptype = 'residential';
 
---time to update the lot size although this is not a large market factor
-select address, lotsize, cast(lot_area as float) as Lot_area, (lotsize-cast(lot_area as float)) as lot_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where lotsize = 0 and cast(lot_area as float) >1 and proptype = 'condominium'
-	order by lot_diff
+-- Time to update the lot size although this is not a large market factor
+SELECT s.address, s.lotsize, CAST(h.lot_area AS FLOAT) AS Lot_area, (s.lotsize-CAST(h.lot_area AS FLOAT)) AS lot_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.lotsize = 0 AND CAST(h.lot_area AS FLOAT) > 1 AND s.proptype = 'condominium'
+ORDER BY lot_diff;
 
-update S
-SET s.lotsize = cast(h.lot_area as float)
+UPDATE s
+SET s.lotsize = CAST(h.lot_area AS FLOAT)
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where lotsize = 0 and cast(lot_area as float) >1 and proptype = 'residential'
+WHERE s.lotsize = 0 AND CAST(h.lot_area AS FLOAT) > 1 AND s.proptype = 'residential';
 
---Final bit is the year built since this does play a role
-select address, year_built, yr_built, (year_built-yr_built) as year_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where year_built = 0 and yr_built > 0
+-- Final bit is the year built since this does play a role
+SELECT s.address, s.year_built, h.yr_built, (s.year_built-h.yr_built) AS year_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.year_built = 0 AND h.yr_built > 0;
 
-update S
+UPDATE s
 SET s.year_built = h.yr_built
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where year_built is null and yr_built > 0
+WHERE s.year_built IS NULL AND h.yr_built > 0;
 
---now to update the zero values
-select address, year_built, yr_built, (year_built-yr_built) as year_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where year_built = 0 and yr_built > 0
+-- Now to update the zero values
+SELECT s.address, s.year_built, h.yr_built, (s.year_built-h.yr_built) AS year_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.year_built = 0 AND h.yr_built > 0;
 
-update S
+UPDATE s
 SET s.year_built = h.yr_built
 FROM sales_data s
 JOIN housing_data h ON s.Taxkey = h.Taxkey
-where year_built = 0 and yr_built > 0
+WHERE s.year_built = 0 AND h.yr_built > 0;
 
---just to see what we're left with
-select address, year_built, yr_built, (year_built-yr_built) as year_diff from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where year_built = 0 and proptype = 'residential'
+-- Just to see what we're left with
+SELECT s.address, s.year_built, h.yr_built, (s.year_built-h.yr_built) AS year_diff 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.Taxkey
+WHERE s.year_built = 0 AND s.proptype = 'residential';
 
-select * from sales_data
-	where proptype = 'residential' and fin_sqft = 0 or proptype = 'condominium' and fin_sqft = 0
+SELECT * 
+FROM sales_data s
+WHERE s.proptype = 'residential' AND s.fin_sqft = 0 OR s.proptype = 'condominium' AND s.fin_sqft = 0;
 
-update S
+UPDATE s
 SET s.proptype = 'Commercial'
 FROM sales_data s
-where address = '318 E CHICAGO ST'
-JOIN housing_data h ON s.Taxkey = h.Taxkey
-where fin_sqft is null and proptype = 'residential'
+WHERE s.address = '318 E CHICAGO ST';
 
-update S
+UPDATE s
 SET s.fin_sqft = 1103
 FROM sales_data s
-where address = '1300 N PROSPECT AV' and fin_sqft = 0
-JOIN housing_data h ON s.Taxkey = h.Taxkey
-where fin_sqft =0 and proptype = 'condominium'
+WHERE s.address = '1300 N PROSPECT AV' AND s.fin_sqft = 0;
 
---this shows the progression by zipcode where homes are being purchased over asking
-select year(sale_date),  geo_zip_code, avg((sale_price-C_A_TOTAL)/C_A_TOTAL)*100 as percent_over/under_assessed from sales_data
-	join housing_data on housing_data.taxkey = sales_data.Taxkey
-	where proptype = 'residential' and C_A_TOTAL >0
-	group by year(sale_date), geo_zip_code
-	order by year(sale_date)
+-- This shows the progression by zipcode where homes are being purchased over asking
+SELECT YEAR(s.sale_date) AS Year, s.geo_zip_code, AVG((s.sale_price-s.county_value)/s.county_value)*100 AS percent_diff 
+FROM sales_data s
+WHERE s.proptype = 'residential' AND s.county_value > 0 AND YEAR(s.sale_date) <= 2022
+GROUP BY YEAR(s.sale_date), s.geo_zip_code
+ORDER BY YEAR(s.sale_date);
 
---this chart would show which zipcodes have been the most active in the past 21 years
-select year(sale_date) as Year, geo_zip_code, count(*) as Total_purchases
-	FROM sales_data s
-	join housing_data h on h.taxkey = s.taxkey
-	group by year(sale_date), geo_zip_code
-	ORDER BY year(sale_date)
+-- This chart would show which zipcodes have been the most active in the past 21 years
+SELECT YEAR(s.sale_date) AS Year, s.geo_zip_code, COUNT(*) AS Total_purchases 
+FROM sales_data s
+JOIN housing_data h ON h.taxkey = s.taxkey
+GROUP BY YEAR(s.sale_date), s.geo_zip_code
+ORDER BY YEAR(s.sale_date);
 
---From there we can break down the changing market based on zipcode, to see which zipcodes are trending upwards and which are trending downwards in terms of total sales activity
+-- From there we can break down the changing market based on zipcode, to see which zipcodes are trending upwards and which are trending downwards in terms of total sales activity
 WITH YearlyPurchases AS (
     SELECT 
-        YEAR(sale_date) AS Year, 
-        geo_zip_code, 
+        YEAR(s.sale_date) AS Year, 
+        s.geo_zip_code, 
         COUNT(*) AS Total_purchases
     FROM sales_data s
     JOIN housing_data h ON h.taxkey = s.taxkey
-    GROUP BY YEAR(sale_date), geo_zip_code
+    GROUP BY YEAR(s.sale_date), s.geo_zip_code
 )
 
 SELECT 
@@ -306,141 +327,88 @@ SELECT
     geo_zip_code, 
     Total_purchases,
     Total_purchases - LAG(Total_purchases) OVER (PARTITION BY geo_zip_code ORDER BY Year) AS YoY_Change
-FROM YearlyPurchases
---WHERE geo_zip_code = 53207 (filter by zipcode)
-ORDER BY 1,2
+FROM YearlyPurchases;
 
---I was curious as to what the sheriff deed(foreclosure) statistics looked like since we know buyers are purchasing above asking, sometimes above thier means as well. In trying to figure out the last transfer of ownership prior to forclosure, i needed to convert the last_name_chg to see if this would be an earlier date than the last conveyance date
-select year(convey_date), count(*) from housing_data
-	where convey_type in ('sd', 'sh', 'md', 'jf')
-	group by year(convey_date)
+-- Do foreclosures and high crime correlate together?
+SELECT h.geo_zip_code, COUNT(*) AS all_foreclosures, mc.crime_count AS crime_rate 
+FROM housing_data h
+LEFT JOIN (
+    SELECT zip, COUNT(*) AS crime_count
+    FROM milwaukee_crime.dbo.merged_years
+    GROUP BY zip
+) AS mc ON h.geo_zip_code = mc.zip
+WHERE h.convey_type IN ('sd', 'sh', 'md', 'jf')
+GROUP BY h.geo_zip_code, mc.crime_count;
 
---converts the nvarchar to datetime
-update housing_data
-	set last_name_chg = convert(datetime, convert(float, last_name_chg))
+-- I added the county_value (C_A_TOTAL) from the Housing_data table to simplify future joins and analysis
+ALTER TABLE sales_data
+ADD County_value INT;
 
---I wanted to see if any of the homes that went into forclosure, were recently acquired. This would moreso check to see if homes were aquired by an invidiual potentially outside the scope of what
---they could afford
---The end result I came to find was while there is an increase in foreclosures, however no strong relationship between recent purchases and foreclosure. 
---This step was done within excel manually when merging the 2002-2018 and 2019-2022 sales data. I opted to show this within SQL as well.
-with Year as (
-SELECT  taxkey,
-    CASE 
-        WHEN CHARINDEX('-', sale_date) > 0 
-        THEN SUBSTRING(sale_date, 1, CHARINDEX('-', sale_date) - 1)
-        ELSE Sale_date
-    END AS Year
-	from sales_data s
-),
-Month as ( 
-Select taxkey,
-	CASE 
-        WHEN CHARINDEX('-', sale_date) > 0 
-        THEN SUBSTRING(sale_date, CHARINDEX('-', sale_date) + 1, LEN(sale_date) - CHARINDEX('-', sale_date))
-        ELSE Sale_date
-    END AS Month
-	from sales_data
-)
-select s.taxkey, convert(datetime, year.year + '-' + month.month + '-01', 120) from sales_data s
-	join year on s.taxkey = year.taxkey
-	join month on s.taxkey = month.taxkey
-
---below query then sets the updated date values into the Sale_date cell
-with Year as (
-SELECT  taxkey,
-    CASE 
-        WHEN CHARINDEX('-', sale_date) > 0 
-        THEN SUBSTRING(sale_date, 1, CHARINDEX('-', sale_date) - 1)
-        ELSE Sale_date
-    END AS Year
-	from sales_data
-),
-Month as ( 
-Select taxkey,
-	CASE 
-        WHEN CHARINDEX('-', sale_date) > 0 
-        THEN SUBSTRING(sale_date, CHARINDEX('-', sale_date) + 1, LEN(sale_date) - CHARINDEX('-', sale_date))
-        ELSE Sale_date
-    END AS Month
-	from sales_data s
-)
-update s
-	set sale_date = convert(datetime, year.year + '-' + month.month + '-01', 120) from sales_data
-	join year on s.taxkey = year.taxkey
-	join month on s.taxkey = month.taxkey
-
---below query looks at all properties that have a forclosure as thier last conveyance as well as a purchase within the last 21 years
---this data does tell us that the average timeframe from purchase to forclosure is decreasing showing that borrowers are potentially putting themselves into homes that they long-term cannot afford should a suddent expense
---come into play(hospital bill, death, etc)
-select h.taxkey, s.sale_date as Date_prop_last_sold, convert(datetime, convert(float, convey_date)) as Date_property_forclosed, datediff(month, s.sale_date, convert(datetime, convert(float, convey_date))) as monthsdiff
-	from housing_data h
-	join sales_data s on s.taxkey = h.taxkey
-	where convey_type in ('sd', 'sh', 'md', 'jf')
-	order by convey_date
-
---I came back to this code when adding to my portfolio and realized the overall complexity of it. So I chose to simplify it a bit with a CTE.
-WITH ConvertedDates AS (
-    SELECT 
-        h.taxkey,
-        s.sale_date,
-        CONVERT(datetime, CONVERT(float, h.convey_date)) AS ConvertedConveyDate
-    FROM housing_data h
-    JOIN sales_data s ON s.taxkey = h.taxkey
-    WHERE convey_type in ('sd', 'sh', 'md', 'jf')
-)
-
-SELECT 
-    taxkey,
-    sale_date AS Date_prop_last_sold,
-    ConvertedConveyDate AS Date_property_forclosed,
-    round(DATEDIFF(month, sale_date, ConvertedConveyDate)/12.0, 1) AS Yearsdiff
-FROM ConvertedDates
-ORDER BY ConvertedConveyDate;
-
---Do forclosures and high crime correlate together?
-SELECT geo_zip_code, COUNT(*) AS all_foreclosures, mc.crime_count AS crime_rate
-	FROM housing_data AS hd
-	LEFT JOIN
-		 (SELECT zip, COUNT(*) AS crime_count
-		    FROM milwaukee_crime.dbo.merged_years
-			GROUP BY zip
-		) AS mc
-	ON hd.geo_zip_code = mc.zip
-	where convey_type in ('sd', 'sh', 'md', 'jf')
-	GROUP BY hd.geo_zip_code, mc.crime_count;
-
---I added the county_value(C_A_TOTAL) from the Housing_data table to simplify future joins and analysis
-alter table sales_data
-	Add County_value Float
-
-update S
-set s.county_value = h.C_A_TOTAL
-from sales_data S
-JOIN housing_data h ON s.Taxkey = h.Taxkey
-where taxkey = '3650250100'
-
---NULL values were manually found and a sheet imported into SQL for migration on the taxkey
-update s
-set s.county_value = c.new_county_value
+UPDATE s
+SET s.county_value = h.C_A_TOTAL
 FROM sales_data s
-join county_values c on c.taxkey = s.taxkey
+JOIN housing_data h ON s.Taxkey = h.Taxkey
+WHERE s.taxkey = '3650250100';
 
+-- NULL values were manually found and a sheet imported into SQL for migration on the taxkey
+UPDATE s
+SET s.county_value = c.new_county_value
+FROM sales_data s
+JOIN county_values c ON c.taxkey = s.taxkey;
 
---(Tabluea Viz)-Calculates the percentage above or below the county value since we know the county value to have the strongest correlation with final sale price
-select month(sale_date), avg((sale_price-county_value)/county_value)*100 as percentage_diff
-from sales_data
-where proptype = 'residential' and county_value >0 and year(sale_date) <=2022
-group by month(sale_date)
-order by month(sale_date)
+-- (Tabluea Viz) - Calculates the percentage above or below the county value since we know the county value to have the strongest correlation with final sale price
+SELECT MONTH(s.sale_date) AS Month, AVG((s.sale_price-s.county_value)/s.county_value)*100 AS percentage_diff 
+FROM sales_data s
+WHERE s.proptype = 'residential' AND s.county_value > 0 AND YEAR(s.sale_date) <= 2022
+GROUP BY MONTH(s.sale_date)
+ORDER BY MONTH(s.sale_date);
 
---(Tableau Viz)-Calculates the difference between total sales and inventory for any given month
-select year(sale_date) as Year, month(sale_date) as Month, count(*) as Total_sales, h.inventory, (h.inventory - count(*)) as Difference from sales_data s
-join housing_inventory h ON YEAR(s.sale_date) = YEAR(h.DATE) AND MONTH(s.sale_date) = MONTH(h.DATE)
-where proptype = 'residential'
-	group by month(sale_date), year(sale_date), h.inventory
-	order by 1,2
+-- (Tableau Viz) - Calculates the difference between total sales and inventory for any given month
+SELECT YEAR(s.sale_date) AS Year, MONTH(s.sale_date) AS Month, COUNT(*) AS Total_sales, h.inventory, (h.inventory - COUNT(*)) AS Difference 
+FROM sales_data s
+JOIN housing_inventory h ON YEAR(s.sale_date) = YEAR(h.DATE) AND MONTH(s.sale_date) = MONTH(h.DATE)
+WHERE s.proptype = 'residential'
+GROUP BY MONTH(s.sale_date), YEAR(s.sale_date), h.inventory
+ORDER BY YEAR(s.sale_date), MONTH(s.sale_date);
 
-	
+-- Do foreclosures and high crime correlate together?
+SELECT h.geo_zip_code, COUNT(*) AS all_foreclosures, mc.crime_count AS crime_rate 
+FROM housing_data h
+LEFT JOIN (
+    SELECT zip, COUNT(*) AS crime_count
+    FROM milwaukee_crime.dbo.merged_years
+    GROUP BY zip
+) AS mc ON h.geo_zip_code = mc.zip
+WHERE h.convey_type IN ('sd', 'sh', 'md', 'jf')
+GROUP BY h.geo_zip_code, mc.crime_count;
 
+-- I added the county_value (C_A_TOTAL) from the Housing_data table to simplify future joins and analysis
+ALTER TABLE sales_data
+ADD County_value FLOAT;
 
+UPDATE s
+SET s.county_value = h.C_A_TOTAL
+FROM sales_data s
+JOIN housing_data h ON s.Taxkey = h.Taxkey
+WHERE s.taxkey = '3650250100';
 
+-- NULL values were manually found and a sheet imported into SQL for migration on the taxkey
+UPDATE s
+SET s.county_value = c.new_county_value
+FROM sales_data s
+JOIN county_values c ON c.taxkey = s.taxkey;
+
+-- (Tableau Viz) - Calculates the percentage above or below the county value since we know the county value to have the strongest correlation with final sale price
+SELECT MONTH(s.sale_date) AS Month, AVG((s.sale_price-s.county_value)/s.county_value)*100 AS percentage_diff 
+FROM sales_data s
+WHERE s.proptype = 'residential' AND s.county_value > 0 AND YEAR(s.sale_date) <= 2022
+GROUP BY MONTH(s.sale_date)
+ORDER BY MONTH(s.sale_date);
+
+-- (Tableau Viz) - Calculates the difference between total sales and inventory for any given month
+SELECT YEAR(s.sale_date) AS Year, MONTH(s.sale_date) AS Month, COUNT(*) AS Total_sales, h.inventory, (h.inventory - COUNT(*)) AS Difference 
+FROM sales_data s
+JOIN housing_inventory h ON YEAR(s.sale_date) = YEAR(h.DATE) AND MONTH(s.sale_date) = MONTH(h.DATE)
+WHERE s.proptype = 'residential'
+GROUP BY MONTH(s.sale_date), YEAR(s.sale_date), h.inventory
+ORDER BY YEAR(s.sale_date), MONTH(s.sale_date);
