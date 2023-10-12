@@ -50,8 +50,8 @@
 								<div class="image main"><img src="images/milwaukee.jpg" alt="" /></div>
                                 <p>To begin, we first needed the data we want to review. In this case, we're curious about not only the sales happening in Milwaukee, but also to reference against the master property dataset. 
                                 </p>
-                                <p><a href="https://data.milwaukee.gov/dataset/property-sales-data" >Current and Historical Housing Sales(2002-2022) </a></p>
-                                <p><a href="https://data.milwaukee.gov/dataset/mprop">Master Property data containing all homes in the city of Milwaukee</a></p>
+                                <p><a href="https://data.milwaukee.gov/dataset/property-sales-data" >Current and Historical Housing Sales(2002-2022)(SQL Alias: Sales_data) </a></p>
+                                <p><a href="https://data.milwaukee.gov/dataset/mprop">Master Property Data containing all homes in the city of Milwaukee(SQL Alias: Housing_data)</a></p>
                                 <p>Now that we have our data, I want to see about simply merging the sales files together for easier use later on. Comparing the data between the historical data(2002-2018) and current data(2019-2022), I noticed a discrepancy
                                     in the type of date used in the histoical datasets. To correct this, I converted the string YYYY-MM to a standard date format of MM-DD-YYYY using =DATE(LEFT(SALE_DATE),4),RIGHT(SALEDATE,2),1) which will not get the actual day of the month as it's not in the original data, but will keep the dates consistant across
                                     the tables. 
@@ -76,7 +76,7 @@
                                     which should only show distinct instances and identify any true duplicates, which there were none when we sorted by Highest > Lowest of the Distinct Count column which is what we were hoping to see.
                                 </p>
 								<P>
-                                    Final bit to clean is the Master Housing Data file. The key items on this dataset are the following: 
+                                    Final bit to clean is the Housing_data file. The key items on this dataset are the following: 
                                     <ul>
 										<li><b>Geo_zip_code </b> - Will be used to highlight areas of movement</li>
 										<li><b>Taxkey</b> - Used to merge the sales_data with the master dataset</li>
@@ -90,7 +90,7 @@
                                     for accuracy. I found a few under "53007" that are not Milwaukee zipcodes. Using google, I was able to determine the accurate zipcode of 53225 for all of the properties with 53007.
                                 </P>
                                 <p>
-                                    Now that we have the Master Housing data cleaned, it was time to import into SQL Server. Once both tables were loaded, I did a general JOIN between the both based on the Taxkey to see if there was any irregularities between data 
+                                    Now that we have the Housing_data cleaned, it was time to import into SQL Server. Once both tables were loaded, I did a general JOIN between the both based on the Taxkey to see if there was any irregularities between data 
                                     that could throw off our final figures. One of those points is the bedroom count. The query below was used to isolate the differences.
                                     <p><pre>
                                         <code>
@@ -103,12 +103,11 @@ ORDER by bed_difference
     
                                 </p>
                                 <P>
-                                    It's interesting to see at this point, where data can be thrown off based on human error done at the county level as well as the REO agent when the property was LISTED. My thought process on this is that we want to take
-                                    the lessor of the two values as these were determined to be most accurate. The end result would of course be keeping the lessor values if they are present on the sales_data table, but update sales_data if the bedroom count 
-                                    is greater than the county reported figure. Before making this update, I took a sample size from the below query to see if the change that would be made would do more damage than good. The end result from doing a manual sample
-                                    of around 60 addresses for a confidence level of 90%, is that 58 of the 60 addresses that I reviewed in this sample set, had the county reporting the bed count correctly with the sales_data being incorrect. This discrepancy is more prevelant
-                                    on homes that are duplex's with the assumption that the REO agent reviews the county house data, sees the bed count listed at the county level, and then multiplys that figure by the unit count. The reason for having the bedroom count >=1 
-                                    from the housing_data table is due to the county reporting some homes as having no bed counts. In this case, the data will resort to the sales data table for the bed count as this is going to be assumed as being more accurate.
+                                    It's interesting to see at this point, where data can be thrown off based on human error done at the county level as well as the REO agent when the property is listed. My thought process on this is that we want to take
+                                    the lessor of the two values as these were determined to be most accurate. The end result would of course be keeping the lessor values if they are present on the Sales_data table, but update Sales_data if the bedroom count 
+                                    is greater than the Housing_data figure. Before making this update, I took a sample size from the below query to see if the change that would be made would do more damage than good. I manually validated 60 homes, finding that of the 60, 58 were incorrect. What this tells me is that there is a 96.67% chance that the sales_data is incorrect whenever the bedroom count is higher than the county stated figure. This discrepancy is more prevelant
+                                    on homes that are duplex's with the assumption that the REO agent reviews the the home features on the county website, sees the bed count listed in ounty records, and then multiplys that figure by the unit count(ex. Multiply by 2 if the property is a Duplex). The reason for having the bedroom count >=1 
+                                    from the Housing_data table is due to the county reporting some homes as having no bed counts. In this case, the bedroom count will resort to the sales_data figure.
                                     <p><pre>
                                         <code>
 SELECT proptype, address, bdrms, bedrooms, (bdrms-bedrooms) as bed_difference from sales_data
@@ -122,7 +121,7 @@ ORDER by bdrms
 
                                 </P>
                                 <p>
-                                    In addition to comparing the tables for the bedcount, I constrained for whever "BDRMS"(bedcount) = 0 within the sales data table. I set a default value to 1 if the property is residential since you can't have a home without at least 
+                                    In addition to comparing the tables for the bedcount, I constrained for "BDRMS"(bedcount) = 0 within the Sales_data table. I set a default value to 1 if the property is residential since you can't have a home without at least 
                                     1 bedroom. This same thought process is going to be applicable to the bathrooms[fbath, hbath] and number of rooms[nr_of_rooms], but only after updating the sales data from the housing data as a primary attempt to gather correct data. 
                                 </p>
                                 <p>
@@ -236,7 +235,7 @@ plt.show()
                                     place. In addition, I attached a slider that shows the percentage above asking when filtering the dataset since an overall average across the entire dataset would not represent a changing market like we've experienced
                                     from 2019 through 2022. The solution in this case is using a calculated field 
                                     to take all the years <i>after</i> the date on the slider, so you can better guage when to buy a home based on the general market. If you move the slider to say, 2014, it will only include 2014, 2015, 2016.... and so on. 
-                                    That being said, you can very clearly see the green and red positions across each averaged year used in the calculation, showing that even as far back as 2009, we now know that the best time to purchase a home if you're looking for the best
+                                    That being said, you can see the green and red positions across each averaged year used in the calculation, showing that even as far back as 2009, we now know that the best time to purchase a home if you're looking for the best
                                     deal, would be in January.
                                     <pre>
                                         <code>
@@ -249,8 +248,26 @@ ORDER by percentage_diff
                                     
 <div class='tableauPlaceholder' id='viz1696448789981' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing2&#47;BuyingTrendsViz&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='site_root' value='' /><param name='name' value='MilwaukeeHousing2&#47;BuyingTrendsViz' /><param name='tabs' value='no' /><param name='toolbar' value='yes' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;Mi&#47;MilwaukeeHousing2&#47;BuyingTrendsViz&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /><param name='filter' value='publish=yes' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696448789981');                    var vizElement = divElement.getElementsByTagName('object')[0];                    if ( divElement.offsetWidth > 800 ) { vizElement.style.minWidth='1150px';vizElement.style.maxWidth='100%';vizElement.style.minHeight='1017px';vizElement.style.maxHeight=(divElement.offsetWidth*0.75)+'px';} else if ( divElement.offsetWidth > 500 ) { vizElement.style.minWidth='1150px';vizElement.style.maxWidth='100%';vizElement.style.minHeight='1017px';vizElement.style.maxHeight=(divElement.offsetWidth*0.75)+'px';} else { vizElement.style.width='100%';vizElement.style.minHeight='1050px';vizElement.style.maxHeight=(divElement.offsetWidth*1.77)+'px';}                     var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
                                 </P>
+                                <P>
+                                    What have we learned from this project thus far? We sourced and cleaned a few datasets using SQL. We utilized Python to explore our data as well as clean. We know that 15 and 30 year mortgage interest rates are on a very steady rise. We also found that the average sale price is increased from $150336 in 2018, to $197,831 in 2022. A 31.59% increase in a 5 year span. Whereas the previous 5 year span from 2014 to 2018 the average home sale price only increased 12.33%. We also know that Milwaukee's housing supply is declining from 2016 to 2022 by 48.21% whereas the demand is increasing during that same time period by 70.92%. We laid the general ground work for a forecasting model by identifying which attributes of a home(square footage, bath count, county value, etc) play the largest role in determining the final sale price. We also identified the hot vs cold buying seasons as well as determining approximately how much money can be saved if you are willing to purchase a home during the winter months vs the summer months. 
+                                </P>
                                 <p>
-                                    **TO BE CONTINUED
+                                The next item that is currently being worked on, is a forecasting model. While it's easy to say lets just build a forecasting model using what we know already, the reality is that we need to figure out the value squarefootage, season purchased in, bathrooms, etc have on the final price of a home. To do this, I needed to break down the data into segments and focus on a model for each segment as a home that is valued at 100k in one area will not have the final sale price of a 100k home in another. Additionally, as we've discovered, the time of year plays a factor in how much buyers are willing to spend above or below the county assessed value. <br>
+                                Using the data we have and the items we've uncovered, I thought of some interesting ways to help predict future home prices. I wanted to first determine exactly what it was I was looking to train the model on. 
+                                <ul>
+                                    <li><b>Size Efficiency</b> - Fin_sqft / Lotize = efficiency. If a lot is primarily utilized for living space and minimal yard, this could have an adverse effect on buyers who have kids or plan to have kids</li>
+                                    <li><b>fin_sqft</b> - We know that squarefootage has a .48/.49 correlation with sale_price and county_value</li>
+                                    <li><b>Fbath</b> - Full bathroom count</li>
+                                    <li><b>Hbath</b> - Half Bath. Depending on the amount of homes in each bin that have half baths, I may treat each half bath as .5 and add it to the Fbath count.</li>
+                                    <li><b>Fbath</b> - Bathroom count</li>
+                                    <li><b>Season</b> - Using temporal diferences can help with accuracy of the model since we know time of year impacts final sale price. I will split the time of year into months by extracting month(sale_date) from the data. Then splitting Winter into 12, 1, 2. Spring into 3, 4, 5. Summer into 6, 7, 8. And then Fall will be 9, 10, 11.</li>
+                                    </li>
+                                </ul>
+                                
+                                
+                                I want to bin the [sale_price] based on a Low, Medium, and High value as a high priced home will scale differently than a lower priced one. From there, we want to break down the attributes of the homes and train the model based on those attributes. I chose to split the data within each [low, med, high] further into Districts as I found the District to have the lowest degree of variance compared to zipcodes and neighborhoods.<br>
+
+
                                 </p>
                                 <p>
                                     Some items that will be added soon:
