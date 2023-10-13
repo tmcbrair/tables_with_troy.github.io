@@ -164,7 +164,6 @@ SET s.fbath = 1
 FROM sales_data s
 WHERE (s.fbath IS NULL AND s.proptype = 'residential') OR (s.fbath IS NULL AND s.proptype = 'condominium');
 
--- EXPLORING
 -- Now to move on to half baths which are called powder rooms within the housing data. This was confirmed within the readme
 SELECT s.address, s.hbath, h.powder_rooms, (s.hbath-h.powder_rooms) AS halfbath_diff 
 FROM sales_data s
@@ -199,7 +198,7 @@ FROM sales_data s
 JOIN housing_data h ON h.taxkey = s.Taxkey
 ORDER BY halfbath_diff;
 
--- Need to remove the hbath outlier in the sales data tied to 6012 N 37th
+-- Need to remove the hbath outlier in the sales data tied to 6012 N 37th using verified information from county data
 UPDATE s
 SET s.hbath = 1
 FROM sales_data s
