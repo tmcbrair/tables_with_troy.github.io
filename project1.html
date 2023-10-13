@@ -45,7 +45,7 @@
 									
 									<h1>Milwaukee Crime Statistics Project</h1>
 									<p>A few weeks ago I was having a discussion with some friends about how it feels like Milwaukee is becoming more unsafe compared to when we used to live in the city back in 2013. Being the curious person that I am, I wanted to find 
-										if this statement is true or false using a combination of SQL, Python, Excel, and Tableau.
+										if this statement is true or false using a combination of SQL, Python, Excel, and Tableau. 
 									</p>
 								</header>
 								<div class="image main"><img src="images/crime.jpeg" alt="" /></div>
@@ -57,7 +57,7 @@
 								
 
 								<p> 
-									Now that we have our data, it's time to explore and clean! Upon opening both datasets, I reviewed the columns to see which ones would be most useful for our project and listed them below. 
+									Now that we have our data, it's time to clean. Upon opening both datasets, I reviewed the columns to see which ones would be most relevant for our objective and listed them below. 
 									<ul>
 										<li><b>Incidentnum </b>- This is the unique identifier that will be used to join data</li>
 										<li><b>roughX and roughY</b> - These coordinates will be used to map out where each incident takes place.</li>
@@ -68,13 +68,13 @@
 									</ul>
 									While reviewing, I found that IncidentNum does vary
 									between INT and String. This is due to the way in which the Milwaukee Police Department started the "P2C" program in October 2022, which allows for citizens to self report crimes without police taking the formal incident. Those incidents that were reported
-									by citizens begin with P2C. We also have each crime listed with a boolean [0][1] to determine the type of incident. One item to note would be that there are some entries that contain 2 or more [1]'s which pertain that at the time of the incident, we can have more than one incident type. 
-									We also have quite a few NULL values under [zipcode, roughX, roughY, Location] which we will attempt to resolve using joined datasets within SQL and some python scripts later on.
+									by citizens begin with P2C. We also have each crime listed with a boolean [0][1] to determine the type of incident. One item to note would be that there are some entries that contain 2 or more [1]'s which pertain that at the time of the incident, we can have more than one incident type(Ex. incident was both an assault and robbery).
+									We also have quite a few NULL values under [zipcode, roughX, roughY, Location] which we will attempt to resolve using joined datasets within SQL and some python scripts later on. I found that Sex Offenses do not list address, roughx, or roughy, so mapping these incidents on a map would be difficult, however we can still use the data in our aggregate incident count.
 								</p>
 								
 								
 								<p>
-									Now that we know what our data looks like and what we should need to proceed, let's get going! To simplify things, I chose to merge the current dataset with the historical dataset. From there, I extracted the [IncidentNum, roughX, roughY] from the merged dataset into a new excel document since I wanted to keep the output 
+									Now that we know what our data looks like and what we should need to proceed, let's get going! To simplify things, I chose to merge the current dataset with the historical dataset, renaming it to Merged_Incidents. From there, I extracted the [IncidentNum, roughX, roughY] from the merged dataset into a new excel document since I wanted to keep the output 
 									separate that of the main dataset. The reason being is that I am going to use Python to convert
 									the RoughX and RoughY coordinates into a format that can be used by Tableau. From within Tableau and SQLite, joining the transformed coordinate data to the incidentnum on the main dataset can be done easily now.
 								</p>
@@ -97,30 +97,30 @@
 									Of the 831487 rows, there was a total of 153 incidentnums whos count(*) was >1 for a total of 227 duplicate entries as a result. Based on the size of the dataset, and majority of the duplicated incidentnum entries were historic in nature. Given that only 22% 
 									of the duplicates happened in the last 10 years, and the overall percentage of duplicates being neglible when compared to the main dataset, I decided to remove them all together.
 								</p>
-								<p>With coordinates and incidentnum out of the way, it was time to work on the zipcode. This one gets a little more interesting as I chose to look at using a master housing database from the city of Milwaukee to crossreference any potential joins on the Location.
+								<p>With coordinates and incidentnum out of the way, it was time to work on the zipcode. This one gets a little more interesting as I chose to look at using a master housing database from the City of Milwaukee to crossreference any potential joins on the Location.
 									The goal being that if I can get a match, the zipcode would then be present on the main property database. 
 								</p>
 								<p>Dataset for Milwaukee Homes: <a href="https://data.milwaukee.gov/dataset/mprop">Master Property Record</a></p>
 								<p>Within this dataset, we're only concerned about the zipcodes associated with what will be a concatinated address within SQL. The following queries with some modification to the concat function to find any variations was used to fill in some of the missing zipcodes.</p>
 								<p><pre>
 									<code>
-SELECT housing_data.geo_zip_code as Housing_data_zip, new_complete_data.zip as Incident_list_zip, housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype as Street_Address from housing_data
-	JOIN new_complete_data on new_complete_data.location = housing_data.house_nr_lo || " " || housing_data.sdir || " " || housing_data.street || ' ' || housing_data.sttype
-	WHERE new_complete_data.zip is null
+SELECT housing_data.geo_zip_code as Housing_data_zip, Merged_Incidents.zip as Incident_list_zip, housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype as Street_Address from housing_data
+	JOIN Merged_Incidents on Merged_Incidents.location = housing_data.house_nr_lo || " " || housing_data.sdir || " " || housing_data.street || ' ' || housing_data.sttype
+	WHERE Merged_Incidents.zip is null
 										
-UPDATE new_complete_data
+UPDATE Merged_Incidents
 	SET zip = housing_data.geo_zip_code
 	FROM housing_data
-	WHERE new_complete_data.location = housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype
-AND new_complete_data.zip IS NULL;								
+	WHERE Merged_Incidents.location = housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype
+AND Merged_Incidents.zip IS NULL;								
 									</code>
 									</pre>
 								</p>
 								
 									
-								<P>Initially we were around 15357 missing zipcodes and now we're down to 15117. Very small percentage, but we got some other ways to maybe get this number down a bit. So the next thought process was running a process within Python that would search for the adddress
+								<P>Initially we were around 15357 missing zipcodes and now we're down to 15117. Very small percentage, however we have some other ways to maybe get this number down a bit. So the next thought process was running a process within Python that would search for the adddress
 									and report back either the zipcode or a string letting us know the address could not be found. The limitations with this process as well as the other one is that it relies heavily on the address being in the correct format on the incident list to match up to the 
-									results found. What I did to help the search function was add "Milwaukee" after each address within Excel using a concat function prior to running the python script. This kept the main modifications off the main dataset and would allow for easier merging later on as we've been doing.
+									results found. What I did to help the search function was add "Milwaukee" after each address within Excel using a concat function prior to running the python script. 
 									<iframe src="https://nbviewer.jupyter.org/url/github.com/tmcbrair/tables_with_troy.github.io/blob/e304b420965457784d4771b6e7de1daa1f065e7a/Find%20Zipcode%20based%20on%20Address_hidden_path.ipynb" width="100%" height="400px"></iframe>
 
 								</P>
@@ -130,27 +130,102 @@ AND new_complete_data.zip IS NULL;
 								<p>
 									<pre>
 									<code>
-UPDATE new_complete_data
+UPDATE Merged_Incidents
 SET zip = (
     SELECT Address_Python_scraped.zipcode
     FROM Address_Python_scraped
-    WHERE Address_Python_scraped.address = new_complete_data.location
+    WHERE Address_Python_scraped.address = Merged_Incidents.location
     AND length(Address_Python_scraped.zipcode) = 5
 )
 WHERE EXISTS (
     SELECT 1
     FROM Address_Python_scraped
-    WHERE Address_Python_scraped.address = new_complete_data.location
+    WHERE Address_Python_scraped.address = Merged_Incidents.location
     AND length(Address_Python_scraped.zipcode) = 5
 )
-AND new_complete_data.zip IS NULL;
+AND Merged_Incidents.zip IS NULL;
 									</code>
 								</pre></p>
 								<P>With the Python address scrape done and merged with our database, we've successfully lowered the NULL zipcodes from 15117, to 8840. To continue further and be more efficient, we'd need to integrate into Googles map API which would come at a cost. Perhaps at a later
 									time and with more experience it's something that could be done to truly have an accurate database. At this point however, I am happy with getting our zipcode NULL values down to around 1%.
 								</P>
 								<p>
-									From here, We could start building our dashboard with the clean data. In the below viz, you have the top 10 zipcodes with the most reported incidents that spans over the entire dataset. From there, you can change the years which also changes the subsequent data that gets displayed in the breakdown as well as the zipcode historical trends.
+									Now that we've pulled together the zipcodes on our incident database, we can do some exploratory data analysis. Since I own multiple rental properties myself, I know the importance of renter saturation, or the fraction of owner occupied homes to non-owner occupied homes. In the past, I have found that when tenants live in the same building(ex. Duplex, apartment, ex) as friends, family, or in a dense region of other primarily tenant occupied homes, what ends up happening is that the "checks and balances" of the homes starts to decline. Generally those who own a home in a neighborhood are more apt to call the police department, other nearby homeowners, or the city whenever they see something they disagree with and want rectified. However when an area has a disproportionate amount of tenants to owners, this natural balance starts to decline and small issues such as tenant belongings in the yard, uncut grass, and general unit upkeep start to become larger issues.<br>
+									To check this, we can tally up the total non-owner occupied and total owner occupied homes within the master home dataset first and divide them up based on the zipcode.
+									<pre>
+										<code>
+WITH Counts AS (
+SELECT 
+	geo_zip_code,
+	SUM(CASE WHEN own_ocpd = 'o' THEN 1 ELSE 0 END) AS occupied_count,
+	SUM(CASE WHEN own_ocpd is null THEN 1 ELSE 0 END) AS non_occupied_count
+FROM housing_data h
+GROUP BY geo_zip_code
+)
+											
+SELECT 
+	c.geo_zip_code,
+	c.occupied_count,
+	c.non_occupied_count,
+	(CAST((occupied_count - non_occupied_count) AS FLOAT) / 
+		CASE 
+			WHEN non_occupied_count = 0 THEN 1  -- Prevent division by zero
+			ELSE non_occupied_count 
+		END) * 100 AS percentage_difference
+FROM Counts c
+GROUP BY c.geo_zip_code, c.occupied_count, c.non_occupied_count
+										</code>
+									</pre>
+									Let's add the incident totals in there as well. 
+									<pre>
+										<code>
+WITH Counts AS (
+SELECT 
+	geo_zip_code,
+	SUM(CASE WHEN own_ocpd = 'o' THEN 1 ELSE 0 END) AS occupied_count,
+	SUM(CASE WHEN own_ocpd is null THEN 1 ELSE 0 END) AS non_occupied_count
+	FROM housing_data h
+GROUP BY geo_zip_code
+),
+											
+IncidentCounts AS (
+SELECT 
+	cs.zip,
+	COUNT(*) AS incident_count
+FROM crime_stats cs
+GROUP BY cs.zip
+)
+											
+SELECT 
+	c.geo_zip_code,
+	c.occupied_count,
+	c.non_occupied_count,
+	incident_count,
+	(CAST((occupied_count - non_occupied_count) AS FLOAT) / 
+		CASE 
+			WHEN non_occupied_count = 0 THEN 1  -- Prevent division by zero
+			ELSE non_occupied_count 
+		END) * 100 AS percentage_difference
+FROM Counts c
+LEFT JOIN IncidentCounts ic ON ic.zip = c.geo_zip_code
+GROUP BY c.geo_zip_code, c.occupied_count, c.non_occupied_count, ic.incident_count;										
+										</code>
+									</pre>
+									
+									<div class="image main"><img src="images/owner.jpg" alt="" /></div>
+
+									If you look closely, you can almost see that wherever there is a negative percentage or a figure close to 1, the incident rate tends to be higher. The query itself is pretty lengthy and would not be appropriate for this page, however it can be found within the <b>Additional Resources</b> pane on this site. The query itself takes the initial query as seen above, and then bins the zipcodes based on thier percentage of owner vs non occupied owner, then averages the incidents in each bin. The output is below:
+									
+									<div class="image-container">
+										<img src="images\percentage.jpg" alt="Description 1" class="responsive-image">
+										
+									</div>
+									
+								</p>
+
+								<p>
+									**These dashboards below were moved from a different section and waiting to be placed once I figure out thier relevancy**
+									From here, we could start building our dashboard with the clean data. In the below viz, you have the top 10 zipcodes with the most reported incidents that spans over the entire dataset. From there, you can change the years which also changes the subsequent data that gets displayed in the breakdown as well as the zipcode historical trends.
 									<div class='tableauPlaceholder' id='viz1696525556835' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;2N&#47;2NNXRH6YC&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='path' value='shared&#47;2NNXRH6YC' /> <param name='toolbar' value='no' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;2N&#47;2NNXRH6YC&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696525556835');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
 								</p>
 								<p>
@@ -158,8 +233,14 @@ AND new_complete_data.zip IS NULL;
 									<div class='tableauPlaceholder' id='viz1696525861134' style='position: relative'><noscript><a href='#'><img alt=' ' src='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;5H&#47;5HMDMQWR9&#47;1_rss.png' style='border: none' /></a></noscript><object class='tableauViz'  style='display:none;'><param name='host_url' value='https%3A%2F%2Fpublic.tableau.com%2F' /> <param name='embed_code_version' value='3' /> <param name='path' value='shared&#47;5HMDMQWR9' /> <param name='toolbar' value='no' /><param name='static_image' value='https:&#47;&#47;public.tableau.com&#47;static&#47;images&#47;5H&#47;5HMDMQWR9&#47;1.png' /> <param name='animate_transition' value='yes' /><param name='display_static_image' value='yes' /><param name='display_spinner' value='yes' /><param name='display_overlay' value='yes' /><param name='display_count' value='yes' /><param name='language' value='en-US' /></object></div>                <script type='text/javascript'>                    var divElement = document.getElementById('viz1696525861134');                    var vizElement = divElement.getElementsByTagName('object')[0];                    vizElement.style.width='100%';vizElement.style.height=(divElement.offsetWidth*0.75)+'px';                    var scriptElement = document.createElement('script');                    scriptElement.src = 'https://public.tableau.com/javascripts/api/viz_v1.js';                    vizElement.parentNode.insertBefore(scriptElement, vizElement);                </script>
 
 								</p>
+								<P>
+									
+								</P>
 								<p>TO BE CONTINUED.
 									<ul>
+										<li>Cross reference the incident number to arrest records to see what percentage of incidents lead to an arrest. Uncaught offenders could result in additional future incidents</li>
+										<li>Of those arrests, how many are convicted? A low conviction rate could result in serial offenders due to lack of punishment</li>
+										<li>Figure out a way to isolate hot spot areas vs low spot areas and identify if any housing characteristics(ex. primarily tenant occupied homes) lead to increased incidents or certain types of incidents. Perhaps even figure out if patterns in which the home is owned(owner, non-owner, owner, nonowner) can play a role in preventing crime by reducing tenant saturation</li>
 										<li>Use Python to scrape an interactive website containing all bus stop coordinates since Milwaukee does not publish this data directly within a standardized dataset located <a href="https://platform.remix.com/project/226791f7?latlng=43.02564,-87.90412,11.349">HERE</a></li>
 										<li>Instead of relying on zipcodes which are an inaccurate and antiquated way of grouping, we could use TRACT and FIPS instead which would give us more specific areas where the crimes are happening
 										</li>
