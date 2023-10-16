@@ -1,0 +1,188 @@
+----------
+--below query begins by converting the string date to datetime since I want to use that at a later time
+----------
+update housing_data
+	set convey_date = convert(datetime, convert(float, convey_date))
+
+----------
+--Updating the zipcode in the incident dataset from the master housing data
+----------
+select housing_data.geo_zip_code as Housing_data_zip, new_complete_data.zip as Incident_list_zip, housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype as Street_Address from housing_data
+join new_complete_data on new_complete_data.location = housing_data.house_nr_lo || " " || housing_data.sdir || " " || housing_data.street || ' ' || housing_data.sttype
+where new_complete_data.zip is null
+
+UPDATE new_complete_data
+SET zip = housing_data.geo_zip_code
+FROM housing_data
+WHERE new_complete_data.location = housing_data.house_nr_lo || ' ' || housing_data.sdir || ' ' || housing_data.street || ' ' || housing_data.sttype --I later just concatted this within excel and formatted it to match the master housing dataset
+AND new_complete_data.zip IS NULL;
+
+----------
+--This takes the transformed coordinates and updates the roughX and roughY
+----------
+UPDATE new_complete_data
+SET roughy = (
+    SELECT coordinates_transformed_csv.transformed_y 
+    FROM coordinates_transformed_csv
+    WHERE coordinates_transformed_csv.incidentnum = new_complete_data.incidentnum
+)
+WHERE EXISTS (
+    SELECT 1
+    FROM coordinates_transformed_csv
+    WHERE coordinates_transformed_csv.incidentnum = new_complete_data.incidentnum
+
+--Update the X coordinates
+UPDATE new_complete_data
+SET roughy = (
+    SELECT coordinates_transformed_csv.transformed_x 
+    FROM coordinates_transformed_csv
+    WHERE coordinates_transformed_csv.incidentnum = new_complete_data.incidentnum
+)
+WHERE EXISTS (
+    SELECT 1
+    FROM coordinates_transformed_csv
+    WHERE coordinates_transformed_csv.incidentnum = new_complete_data.incidentnum
+
+----------
+--I wanted to start by looking simply at the zip codes to see relative owner occupied to non owneroccupied
+----------
+    SELECT 
+        geo_zip_code,
+        SUM(CASE WHEN own_ocpd = 'o' THEN 1 ELSE 0 END) AS occupied_count,
+        SUM(CASE WHEN own_ocpd is null THEN 1 ELSE 0 END) AS non_occupied_count
+    FROM housing_data h
+    GROUP BY geo_zip_code
+
+----------
+--percentage difference of owner to non owner occupied homes. Includes incident numbers
+----------
+WITH Counts AS (
+    SELECT 
+        geo_zip_code,
+        SUM(CASE WHEN own_ocpd = 'o' THEN 1 ELSE 0 END) AS occupied_count,
+        SUM(CASE WHEN own_ocpd is null THEN 1 ELSE 0 END) AS non_occupied_count
+    FROM housing_data h
+    GROUP BY geo_zip_code
+),
+
+IncidentCounts AS (
+    SELECT 
+        cs.zip,
+        COUNT(*) AS incident_count
+    FROM crime_stats cs
+    GROUP BY cs.zip
+)
+
+SELECT 
+    c.geo_zip_code,
+    c.occupied_count,
+    c.non_occupied_count,
+	incident_count,
+    (CAST((occupied_count - non_occupied_count) AS FLOAT) / 
+     CASE 
+         WHEN non_occupied_count = 0 THEN 1  -- Prevent division by zero
+         ELSE non_occupied_count 
+     END) * 100 AS percentage_difference
+FROM Counts c
+LEFT JOIN IncidentCounts ic ON ic.zip = c.geo_zip_code
+GROUP BY c.geo_zip_code, c.occupied_count, c.non_occupied_count, ic.incident_count;
+
+----------
+--We can bin the percentages to get a better idea of what this actually looks like when compared to incident counts
+----------
+WITH Counts AS (
+    SELECT 
+        geo_zip_code,
+        SUM(CASE WHEN own_ocpd = 'o' THEN 1 ELSE 0 END) AS occupied_count,
+        SUM(CASE WHEN own_ocpd is null THEN 1 ELSE 0 END) AS non_occupied_count
+    FROM housing_data h
+    GROUP BY geo_zip_code
+),
+
+IncidentCounts AS (
+    SELECT 
+        cs.zip,
+        COUNT(*) AS incident_count
+    FROM crime_stats cs
+    GROUP BY cs.zip
+),
+
+PercentageDiff AS (
+    SELECT 
+        c.geo_zip_code,
+        c.occupied_count,
+        c.non_occupied_count,
+        incident_count,
+        (CAST((occupied_count - non_occupied_count) AS FLOAT) / 
+         CASE 
+             WHEN non_occupied_count = 0 THEN 1  -- Prevent division by zero
+             ELSE non_occupied_count 
+         END) * 100 AS percentage_difference
+    FROM Counts c
+    LEFT JOIN IncidentCounts ic ON ic.zip = c.geo_zip_code
+)
+
+SELECT
+    CASE 
+        WHEN percentage_difference < 0 THEN '<0%'
+        WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+        WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+        WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+        WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+        ELSE '>400%'
+    END AS percentage_bins,
+    avg(incident_count) AS average_incidents
+FROM PercentageDiff
+GROUP BY 
+    CASE 
+        WHEN percentage_difference < 0 THEN '<0%'
+        WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+        WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+        WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+        WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+        ELSE '>400%'
+    END
+ORDER BY 
+    CASE 
+        WHEN CASE 
+             WHEN percentage_difference < 0 THEN '<0%'
+             WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+             WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+             WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+             WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+             ELSE '>400%'
+         END = '<0%' THEN 1
+        WHEN CASE 
+             WHEN percentage_difference < 0 THEN '<0%'
+             WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+             WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+             WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+             WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+             ELSE '>400%'
+         END = '0-100%' THEN 2
+        WHEN CASE 
+             WHEN percentage_difference < 0 THEN '<0%'
+             WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+             WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+             WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+             WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+             ELSE '>400%'
+         END = '100-200%' THEN 3
+        WHEN CASE 
+             WHEN percentage_difference < 0 THEN '<0%'
+             WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+             WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+             WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+             WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+             ELSE '>400%'
+         END = '200-300%' THEN 4
+        WHEN CASE 
+             WHEN percentage_difference < -0 THEN '<0%'
+             WHEN percentage_difference >= 0 AND percentage_difference < 100 THEN '0-100%'
+             WHEN percentage_difference >= 100 AND percentage_difference < 200 THEN '100-200%'
+             WHEN percentage_difference >= 200 AND percentage_difference < 300 THEN '200-300%'
+             WHEN percentage_difference >= 300 AND percentage_difference < 400 THEN '300-400%'
+             ELSE '>400%'
+         END = '300-400%' THEN 5
+        ELSE 6
+    END;
